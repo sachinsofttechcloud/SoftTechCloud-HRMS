@@ -98,12 +98,12 @@ export default function ForgotPasswordForm() {
           <div className="flex items-center gap-3 rounded-xl bg-blue-500/10 border border-blue-500/20 p-3.5">
             <CheckCircle2 className="h-6 w-6 text-blue-400 shrink-0" />
             <div className="text-left">
-              <p className="text-[12px] xl:text-[13px] text-blue-300 font-medium">
+              <Description className="!text-[12px] xl:!text-[13px] text-blue-300">
                 Reset instructions dispatched
-              </p>
-              <p className="text-[13px] xl:text-[14px] font-semibold text-white truncate max-w-[240px] xl:max-w-[280px]">
+              </Description>
+              <Description className="!text-[13px] xl:!text-[14px] font-semibold truncate max-w-[240px] xl:max-w-[280px]">
                 {submittedEmail}
-              </p>
+              </Description>
             </div>
           </div>
 
@@ -148,7 +148,8 @@ export default function ForgotPasswordForm() {
                 <p className="text-slate-400 text-[11px] mb-3">
                   We received a password reset request for your SoftTechCloud HRMS account.
                 </p>
-                <div className="inline-block rounded-md bg-blue-600/90 hover:bg-blue-600 px-3 py-1.5 text-[11px] font-medium text-white shadow-sm transition cursor-pointer">
+                <div className="inline-block rounded-md bg-blue-600/90 hover:bg-blue-600 px-3 py-1.5 text-[11px] font-medium text-white shadow-sm transition cursor-pointer" 
+                onClick={handleOpenWebmail}>
                   Reset Password Link
                 </div>
               </div>
