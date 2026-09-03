@@ -1,12 +1,10 @@
-import LoginIn from "./login-in/page";
+import AnimatedThemeWrapper from "./components/animated-theme-wrapper";
+import LoginInForm from "./login-in/component/form";
 
 export default function Home() {
   return (
-    <main
-      className="flex min-h-screen flex-col flex-1 items-center justify-center bg-cover bg-center bg-no-repeat font-sans"
-      style={{ backgroundImage: "url('/login/loginbg.webp')" }}
-    >
-      <LoginIn />
-    </main>
+    <AnimatedThemeWrapper>
+      <LoginInForm />
+    </AnimatedThemeWrapper>
   );
 }

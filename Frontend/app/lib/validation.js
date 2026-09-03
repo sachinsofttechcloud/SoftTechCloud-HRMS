@@ -12,7 +12,8 @@ export const emailSchema = z
 export const passwordSchema = z
   .string()
   .min(1, "Enter your password")
-  .min(10, "Password must be at least 14 characters")
+  .min(10, "Password must be at least 10 characters")
+  .max(16, "Password must not exceed 16 characters")
   .regex(/[A-Z]/, "Must contain at least one uppercase letter")
   .regex(/[0-9]/, "Must contain at least one number")
   .regex(/[^A-Za-z0-9]/, "Must contain at least one special character");
@@ -20,4 +21,10 @@ export const passwordSchema = z
 export const loginSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
+  remember: z.boolean().default(true),
 });
+
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
+
