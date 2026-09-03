@@ -58,7 +58,7 @@ export default function ForgotPasswordForm() {
         /* ================= Reset Request Form ================= */
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="auth-form flex flex-col gap-4 border-2 auth-card w-90 xl:w-110 max-w-md rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-8 xl:p-10"
+          className="auth-form flex flex-col gap-4 auth-card w-90 xl:w-110 max-w-md rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-8 xl:p-10 mx-auto"
           noValidate
         >
           <InputField
@@ -93,7 +93,7 @@ export default function ForgotPasswordForm() {
         </form>
       ) : (
         /* ================= Email Sent & Inbox View ================= */
-        <div className="auth-form flex flex-col gap-5 border-2 auth-card w-90 xl:w-110 max-w-md rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-8 xl:p-10">
+        <div className="auth-form flex flex-col gap-5 border-2 auth-card w-90 xl:w-120 max-w-md rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-8 xl:p-10">
           {/* Status Badge */}
           <div className="flex items-center gap-3 rounded-xl bg-blue-500/10 border border-blue-500/20 p-3.5">
             <CheckCircle2 className="h-6 w-6 text-blue-400 shrink-0" />
