@@ -1,0 +1,278 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String               @id @default(uuid())
+  name                String
+  email               String               @unique
+  password            String
+  role                Role                 @default(EMPLOYEE)
+  department          String?
+  designation         String?
+  phone               String?
+  avatar              String?
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  aadharCard          String?
+  bloodGroup          String?
+  panCard             String?
+  passportPhoto       String?
+  address             String?
+  reportingManager    String?
+  employeeId          String?              @unique @map("employee_id")
+  joiningDate         DateTime             @default(now())
+  birthDate           String?              @map("birth_date")
+  probationStatus     String               @default("PROBATION")
+  probationApprovedAt DateTime?
+  attendances         Attendance[]
+  passwordResetTokens PasswordResetToken[]
+  refreshTokens       RefreshToken[]
+  leaveRequests       LeaveRequest[]
+  notifications       Notification[]
+  hrDocument          HrDocument?
+  compensation        Compensation?
+  salarySlips         SalarySlip[]
+  education           Education?
+  bankDetail          BankDetail?
+
+  @@map("users")
+}
+
+model LeaveRequest {
+  id          String   @id @default(uuid())
+  userId      String
+  leaveType   String
+  startDate   String
+  endDate     String
+  startTime   String?
+  endTime     String?
+  session     String   @default("FULL_DAY")
+  totalDays   Float
+  reason      String
+  status      String   @default("PENDING")
+  approvedBy  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("leave_requests")
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String?
+  targetRoles String[]
+  title       String
+  message     String
+  type        String   @default("GENERAL")
+  relatedId   String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model HrDocument {
+  id              String   @id @default(uuid())
+  userId          String   @unique @map("user_id")
+  employeeName    String   @map("employee_name")
+  aadhaarCard     String?  @map("aadhaar_card")
+  panCard         String?  @map("pan_card")
+  joiningLetter   String?  @map("joining_letter")
+  form16          String?  @map("form_16")
+  probationLetter String?  @map("probation_letter")
+  completed       String?  @map("completed")
+  uploadedBy      String?  @map("uploaded_by")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("hr_documents")
+}
+
+model Attendance {
+  id              String           @id @default(uuid())
+  userId          String
+  date            String
+  punchInTime     String?
+  punchOutTime    String?
+  totalHours      Float?
+  workMode        WorkMode         @default(WFO)
+  leaveType       LeaveType        @default(NONE)
+  optionalHoliday String?
+  capturedPhoto   String?
+  status          AttendanceStatus @default(PRESENT)
+  remarks         String?
+  session         String?
+  statusLabel     String?          @map("status_label")
+  firstHalf       String?          @map("first_half")
+  secondHalf      String?          @map("second_half")
+  presentCredit   Float?           @default(0) @map("present_credit")
+  leaveCredit     Float?           @default(0) @map("leave_credit")
+  creditedHours   Float?           @default(0) @map("credited_hours")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@map("attendances")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+model Compensation {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  employeeId         String?  @map("employee_id")
+  totalCtc           Float
+  basicSalary        Float
+  hra                Float
+  specialAllowance   Float
+  variablePay        Float    @default(0)
+  pfDeduction        Float
+  employerPf         Float
+  governmentTax      Float
+  professionalTaxMonthly Float @default(0)
+  inHandCtc          Float
+  monthlyInHand      Float
+  monthlyGross       Float
+  taxBracket         String
+  taxNote            String?
+  effectiveFrom      DateTime @default(now())
+  notes              String?
+  createdBy          String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("compensations")
+}
+
+model SalarySlip {
+  id             String   @id @default(uuid())
+  userId         String
+  month          String
+  monthLabel     String
+  year           Int
+  grossPay       Float
+  pfDeduction    Float    @default(0)
+  governmentTax  Float    @default(0)
+  netPay         Float
+  status         String   @default("DISBURSED")
+  fileUrl        String?
+  fileData       String?  @map("file_data")
+  fileName       String?  @map("file_name")
+  generatedBy    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month])
+  @@map("salary_slips")
+}
+
+model Holiday {
+  id        Int      @id @default(autoincrement())
+  startDate DateTime @map("start_date") @db.Date
+  endDate   DateTime? @map("end_date") @db.Date
+  dayLabel  String   @map("day_label")
+  title     String
+  type      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("holidays")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  HR
+  MANAGER
+  EMPLOYEE
+}
+
+enum AttendanceStatus {
+  PRESENT
+  HALF_DAY
+  ABSENT
+  LEAVE
+  HOLIDAY
+  WEEKEND
+  WFH
+  ON_FIELD
+}
+
+enum WorkMode {
+  WFO
+  WFH
+  ON_FIELD
+}
+
+model Education {
+  id            String   @id @default(uuid())
+  userId        String   @unique @map("user_id")
+  employeeId    String?  @map("employee_id")
+  degree        String
+  instituteName String   @map("institute_name")
+  passingYear   String   @map("passing_year")
+  certificate   String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("educations")
+}
+
+model BankDetail {
+  id            String   @id @default(uuid())
+  userId        String   @unique @map("user_id")
+  employeeId    String?  @map("employee_id")
+  accountNumber String   @map("account_number")
+  accountType   String   @map("account_type")
+  ifscCode      String   @map("ifsc_code")
+  branchName    String   @map("branch_name")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([employeeId])
+  @@map("bank_details")
+}
+
+enum LeaveType {
+  NONE
+  CASUAL
+  SICK
+  EMERGENCY
+}
