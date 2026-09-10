@@ -25,7 +25,7 @@ export const forgotPasswordFields = [
     name: "email",
     type: "email",
     label: "Work Email",
-    placeholder: "e.g. sachin_mohite@softtechcloud.com",
+    placeholder: "e.g. yourname@softtechcloud.com",
     icon: Mail,
   },
 ];

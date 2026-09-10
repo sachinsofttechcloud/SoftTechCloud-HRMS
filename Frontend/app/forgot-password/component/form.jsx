@@ -4,17 +4,20 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, Mail, ExternalLink, RefreshCw } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Mail, ExternalLink, RefreshCw, AlertCircle, KeyRound } from "lucide-react";
 import AuthCard from "@/app/components/auth-card";
 import InputField from "@/app/molecules/input-filed";
 import Button from "@/app/atoms/button";
 import Description from "@/app/atoms/description";
 import { forgotPasswordSchema } from "@/app/lib/validation";
+import { apiForgotPassword } from "@/app/lib/api";
 
 export default function ForgotPasswordForm() {
   const [submittedEmail, setSubmittedEmail] = useState("");
   const [isResending, setIsResending] = useState(false);
   const [resendStatus, setResendStatus] = useState("");
+  const [apiError, setApiError] = useState("");
+  const [debugResetUrl, setDebugResetUrl] = useState("");
 
   const {
     register,
@@ -27,22 +30,43 @@ export default function ForgotPasswordForm() {
   });
 
   const onSubmit = async (data) => {
-    // Simulate API request to send reset email
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setSubmittedEmail(data.email);
+    setApiError("");
+    try {
+      const res = await apiForgotPassword({ email: data.email });
+      setSubmittedEmail(data.email);
+      if (res.debugResetUrl) {
+        setDebugResetUrl(res.debugResetUrl);
+      }
+    } catch (err) {
+      console.error("Forgot password error:", err);
+      setApiError(err.message || "Failed to send reset link. Please try again.");
+    }
   };
 
   const handleOpenWebmail = () => {
-    // Redirect / open softtechcloud domain webmail
-    window.open("https://sh024.webhostingservices.com:2096/cpsess8337035536/3rdparty/roundcube/?_task=mail&_mbox=INBOX", "_blank", "noopener,noreferrer");
+    // Open softtechcloud Roundcube webmail
+    window.open(
+      "https://sh024.webhostingservices.com:2096/cpsess8337035536/3rdparty/roundcube/?_task=mail&_mbox=INBOX",
+      "_blank",
+      "noopener,noreferrer"
+    );
   };
 
   const handleResend = async () => {
+    if (!submittedEmail) return;
     setIsResending(true);
     setResendStatus("");
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsResending(false);
-    setResendStatus("A fresh password reset link has been sent to your inbox.");
+    try {
+      const res = await apiForgotPassword({ email: submittedEmail });
+      setIsResending(false);
+      setResendStatus("A fresh password reset link has been dispatched to your inbox.");
+      if (res.debugResetUrl) {
+        setDebugResetUrl(res.debugResetUrl);
+      }
+    } catch (err) {
+      setIsResending(false);
+      setResendStatus("Failed to resend. Please try again in a few moments.");
+    }
   };
 
   return (
@@ -61,11 +85,18 @@ export default function ForgotPasswordForm() {
           className="auth-form flex flex-col gap-4 auth-card w-90 xl:w-110 max-w-md rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-8 xl:p-10 mx-auto"
           noValidate
         >
+          {apiError && (
+            <div className="flex items-center gap-2.5 rounded-xl bg-red-500/10 border border-red-500/30 p-3 text-red-300 text-[13px]">
+              <AlertCircle className="h-4 w-4 shrink-0 text-red-400" />
+              <span>{apiError}</span>
+            </div>
+          )}
+
           <InputField
             name="email"
             type="email"
             label="Work Email"
-            placeholder="e.g. sachin_mohite@softtechcloud.com"
+            placeholder="e.g. employee@softtechcloud.com"
             icon={Mail}
             {...register("email")}
             error={errors.email?.message}
@@ -121,7 +152,7 @@ export default function ForgotPasswordForm() {
             Open SoftTechCloud Webmail
           </Button>
 
-          {/* Simulated Inbox / Email Preview Card */}
+          {/* Inbox Preview Card */}
           <div className="rounded-xl border border-white/10 bg-black/40 p-4 text-left transition">
             <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
               <div className="flex items-center gap-2">
@@ -148,9 +179,24 @@ export default function ForgotPasswordForm() {
                 <p className="text-slate-400 text-[11px] mb-3">
                   We received a password reset request for your SoftTechCloud HRMS account.
                 </p>
-                <div className="inline-block rounded-md bg-blue-600/90 hover:bg-blue-600 px-3 py-1.5 text-[11px] font-medium text-white shadow-sm transition cursor-pointer" 
-                onClick={handleOpenWebmail}>
-                  Reset Password Link
+                <div className="flex flex-wrap items-center gap-2">
+                  <div
+                    className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 hover:bg-blue-500 px-3 py-1.5 text-[11px] font-medium text-white shadow-sm transition cursor-pointer"
+                    onClick={handleOpenWebmail}
+                  >
+                    <ExternalLink size={12} />
+                    Go to Webmail Inbox
+                  </div>
+
+                  {debugResetUrl && (
+                    <Link
+                      href={debugResetUrl}
+                      className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600/80 hover:bg-emerald-600 px-3 py-1.5 text-[11px] font-medium text-white shadow-sm transition"
+                    >
+                      <KeyRound size={12} />
+                      Open Reset Page (Direct)
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>
