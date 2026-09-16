@@ -18,7 +18,12 @@ const router = express.Router();
 router.post("/onboard", onboardEmployee);
 router.get("/next-employee-id", getNextEmployeeId);
 router.get("/employees", getAllEmployees);
-router.patch("/employee/:id/status", toggleEmployeeStatus);
+router.patch(
+  "/employee/:id/status",
+  authenticateToken,
+  authorizeRoles("ADMIN", "SUPER_ADMIN"),
+  toggleEmployeeStatus
+);
 
 // Authenticated probation & HR document endpoints
 router.get("/probation-alerts", authenticateToken, getProbationAlerts);

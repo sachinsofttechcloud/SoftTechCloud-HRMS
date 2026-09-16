@@ -41,26 +41,62 @@ model User {
   salarySlips         SalarySlip[]
   education           Education?
   bankDetail          BankDetail?
+  moduleAccessGrants  UserModuleAccess[]   @relation("UserModuleAccessTarget")
+  moduleAccessGranted UserModuleAccess[]   @relation("UserModuleAccessGrantedBy")
 
   @@map("users")
 }
 
+model AppModule {
+  id          String             @id @default(uuid())
+  key         String             @unique
+  label       String
+  description String?
+  route       String?
+  groupName   String?            @map("group_name")
+  sortOrder   Int                @default(0) @map("sort_order")
+  isActive    Boolean            @default(true) @map("is_active")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+  userAccess  UserModuleAccess[]
+
+  @@map("app_modules")
+}
+
+model UserModuleAccess {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  moduleId    String    @map("module_id")
+  canAccess   Boolean   @default(true) @map("can_access")
+  grantedById String?   @map("granted_by_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  user        User      @relation("UserModuleAccessTarget", fields: [userId], references: [id], onDelete: Cascade)
+  module      AppModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  grantedBy   User?     @relation("UserModuleAccessGrantedBy", fields: [grantedById], references: [id], onDelete: SetNull)
+
+  @@unique([userId, moduleId])
+  @@index([userId])
+  @@index([moduleId])
+  @@map("user_module_access")
+}
+
 model LeaveRequest {
-  id          String   @id @default(uuid())
-  userId      String
-  leaveType   String
-  startDate   String
-  endDate     String
-  startTime   String?
-  endTime     String?
-  session     String   @default("FULL_DAY")
-  totalDays   Float
-  reason      String
-  status      String   @default("PENDING")
-  approvedBy  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(uuid())
+  userId     String
+  leaveType  String
+  startDate  String
+  endDate    String
+  startTime  String?
+  endTime    String?
+  session    String   @default("FULL_DAY")
+  totalDays  Float
+  reason     String
+  status     String   @default("PENDING")
+  approvedBy String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("leave_requests")
 }
@@ -150,65 +186,65 @@ model PasswordResetToken {
 }
 
 model Compensation {
-  id                 String   @id @default(uuid())
-  userId             String   @unique
-  employeeId         String?  @map("employee_id")
-  totalCtc           Float
-  basicSalary        Float
-  hra                Float
-  specialAllowance   Float
-  variablePay        Float    @default(0)
-  pfDeduction        Float
-  employerPf         Float
-  governmentTax      Float
-  professionalTaxMonthly Float @default(0)
-  inHandCtc          Float
-  monthlyInHand      Float
-  monthlyGross       Float
-  taxBracket         String
-  taxNote            String?
-  effectiveFrom      DateTime @default(now())
-  notes              String?
-  createdBy          String?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                     String   @id @default(uuid())
+  userId                 String   @unique
+  employeeId             String?  @map("employee_id")
+  totalCtc               Float
+  basicSalary            Float
+  hra                    Float
+  specialAllowance       Float
+  variablePay            Float    @default(0)
+  pfDeduction            Float
+  employerPf             Float
+  governmentTax          Float
+  professionalTaxMonthly Float    @default(0)
+  inHandCtc              Float
+  monthlyInHand          Float
+  monthlyGross           Float
+  taxBracket             String
+  taxNote                String?
+  effectiveFrom          DateTime @default(now())
+  notes                  String?
+  createdBy              String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([employeeId])
   @@map("compensations")
 }
 
 model SalarySlip {
-  id             String   @id @default(uuid())
-  userId         String
-  month          String
-  monthLabel     String
-  year           Int
-  grossPay       Float
-  pfDeduction    Float    @default(0)
-  governmentTax  Float    @default(0)
-  netPay         Float
-  status         String   @default("DISBURSED")
-  fileUrl        String?
-  fileData       String?  @map("file_data")
-  fileName       String?  @map("file_name")
-  generatedBy    String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(uuid())
+  userId        String
+  month         String
+  monthLabel    String
+  year          Int
+  grossPay      Float
+  pfDeduction   Float    @default(0)
+  governmentTax Float    @default(0)
+  netPay        Float
+  status        String   @default("DISBURSED")
+  fileUrl       String?
+  fileData      String?  @map("file_data")
+  fileName      String?  @map("file_name")
+  generatedBy   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, month])
   @@map("salary_slips")
 }
 
 model Holiday {
-  id        Int      @id @default(autoincrement())
-  startDate DateTime @map("start_date") @db.Date
+  id        Int       @id @default(autoincrement())
+  startDate DateTime  @map("start_date") @db.Date
   endDate   DateTime? @map("end_date") @db.Date
-  dayLabel  String   @map("day_label")
+  dayLabel  String    @map("day_label")
   title     String
   type      String
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
   @@map("holidays")
 }
@@ -275,4 +311,26 @@ enum LeaveType {
   CASUAL
   SICK
   EMERGENCY
+}
+
+model Exam {
+  id              Int       @id @default(autoincrement())
+  candidateName   String    @map("candidate_name")
+  technology      String
+  examName        String    @map("exam_name")
+  mobileNo        String    @map("mobile_no")
+  mode            String    @default("ONLINE")
+  centerName      String?   @map("center_name")
+  examDate        DateTime  @map("exam_date") @db.Date
+  examTime        String    @map("exam_time")
+  voucher         Boolean   @default(false)
+  assistCost      Float?    @map("assist_cost")
+  paymentStatus   String    @default("PENDING") @map("payment_status")
+  lifecycleStatus String    @default("SCHEDULED") @map("lifecycle_status")
+  cancelledAt     DateTime? @map("cancelled_at")
+  attended        Boolean?
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("exams")
 }

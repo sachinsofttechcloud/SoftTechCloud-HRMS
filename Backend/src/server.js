@@ -10,6 +10,8 @@ import holidays from "./routes/holidays.js";
 import compensationRoutes from "./routes/compensationRoutes.js";
 import payrollRoutes from "./routes/payrollRoutes.js";
 import { notifyEmployeeMilestones } from "./lib/employeeMilestones.js";
+import { grantDefaultsToExistingUsers } from "./lib/moduleAccess.js";
+import examRoutes from "./routes/examRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -40,6 +42,7 @@ app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 
 import leaveRoutes from "./routes/leaveRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import accessRoutes from "./routes/accessRoutes.js";
 
 // Mount Routes
 app.use("/api/auth", authRoutes);
@@ -50,6 +53,8 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/holiday", holidays);
 app.use("/api/compensation", compensationRoutes);
 app.use("/api/payroll", payrollRoutes);
+app.use("/api/access", accessRoutes);
+app.use("/api/exams", examRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
@@ -66,6 +71,9 @@ app.listen(PORT, () => {
   console.log(`🔐 Auth API:    http://localhost:${PORT}/api/auth`);
   console.log(`👥 HR API:      http://localhost:${PORT}/api/hr`);
   console.log(`=========================================`);
+  grantDefaultsToExistingUsers().catch((err) =>
+    console.warn("Default module access:", err.message)
+  );
   notifyEmployeeMilestones().catch((err) => console.warn("Milestone notify:", err.message));
   setInterval(() => {
     notifyEmployeeMilestones().catch((err) => console.warn("Milestone notify:", err.message));

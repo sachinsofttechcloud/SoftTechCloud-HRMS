@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "../lib/prisma.js";
 import { sendOnboardingWelcomeEmail } from "../lib/mailer.js";
 import { joiningDateFromYmd, notifyEmployeeMilestones, saveUserBirthDate } from "../lib/employeeMilestones.js";
+import { grantDefaultModuleAccess } from "../lib/moduleAccess.js";
 import {
   autoConfirmCompletedProbations,
   buildDocumentDownloadText,
@@ -98,7 +99,6 @@ export const onboardEmployee = async (req, res) => {
       name,
       email,
       password,
-      role = "EMPLOYEE",
       department,
       designation,
       phone,
@@ -178,7 +178,7 @@ export const onboardEmployee = async (req, res) => {
         name: name.trim(),
         email: normalizedEmail,
         password: hashedPassword,
-        role: role.toUpperCase(),
+        role: "EMPLOYEE",
         employeeId: normalizedEmployeeId,
         department: department?.trim() || null,
         designation: designation?.trim() || null,
@@ -245,6 +245,7 @@ export const onboardEmployee = async (req, res) => {
       UPDATE bank_details SET employee_id = ${normalizedEmployeeId} WHERE user_id = ${newEmployee.id}
     `;
     await saveUserBirthDate(newEmployee.id, birthDate);
+    await grantDefaultModuleAccess(newEmployee.id, req.user?.id || null);
     newEmployee.birthDate = String(birthDate).slice(0, 10);
     newEmployee.joiningDate = String(joiningDate).slice(0, 10);
     notifyEmployeeMilestones().catch((err) => console.warn("Milestone notify:", err.message));
@@ -321,9 +322,17 @@ export const toggleEmployeeStatus = async (req, res) => {
     const { id } = req.params;
     const { isActive } = req.body;
 
+    if (typeof isActive !== "boolean") {
+      return res.status(400).json({ error: "isActive must be true or false." });
+    }
+
+    if (id === req.user.id && !isActive) {
+      return res.status(400).json({ error: "You cannot deactivate your own account." });
+    }
+
     const updated = await prisma.user.update({
       where: { id },
-      data: { isActive: Boolean(isActive) },
+      data: { isActive },
       select: { id: true, name: true, email: true, isActive: true },
     });
 

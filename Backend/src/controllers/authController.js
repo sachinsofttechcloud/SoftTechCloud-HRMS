@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
 import { attachUserDates, notifyEmployeeMilestones } from "../lib/employeeMilestones.js";
+import { attachUserModuleAccess } from "../lib/moduleAccess.js";
 
 const PROFILE_SELECT = {
   id: true,
@@ -120,6 +121,7 @@ export const login = async (req, res) => {
     });
 
     await attachUserDates(user);
+    await attachUserModuleAccess(user);
 
     // 6. Return response
     return res.status(200).json({
@@ -148,6 +150,8 @@ export const login = async (req, res) => {
         workAnniversaryLabel: user.workAnniversaryLabel || "Less than 1 year",
         education: user.education,
         bankDetail: user.bankDetail,
+        allowedModules: user.allowedModules || [],
+        hasFullModuleAccess: Boolean(user.hasFullModuleAccess),
       },
     });
   } catch (error) {
@@ -341,6 +345,7 @@ export const getMe = async (req, res) => {
     }
 
     await attachUserDates(user);
+    await attachUserModuleAccess(user);
     notifyEmployeeMilestones().catch((err) => console.warn("Milestone notify:", err.message));
 
     return res.status(200).json({ user });
@@ -368,6 +373,7 @@ export const updateProfile = async (req, res) => {
     });
 
     await attachUserDates(updatedUser);
+    await attachUserModuleAccess(updatedUser);
 
     return res.status(200).json({
       message: "Profile updated successfully.",
