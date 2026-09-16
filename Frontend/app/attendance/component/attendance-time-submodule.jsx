@@ -30,7 +30,7 @@ function formatStatNumber(value) {
 
 export default function AttendanceTimeSubmodule({ user }) {
   const isHrOrAdmin = ["HR", "ADMIN", "SUPER_ADMIN", "MANAGER"].includes(user?.role);
-
+ 
   // Tab state: "my-calendar" vs "all-employees"
   const [activeView, setActiveView] = useState("my-calendar");
 
@@ -148,7 +148,7 @@ export default function AttendanceTimeSubmodule({ user }) {
       return { isHoliday: true, label: "Sunday Holiday", type: "Weekend" };
     }
     // 3. Check 2nd / 4th Saturday
-    if (isSecondOrFourthSaturday(y, m, d, dayOfWeek)) {
+    if (isSecondOrFourthSaturday(y, m, d, dayOfWeek) && user?.department == "Engineering") {
       return { isHoliday: true, label: "2nd/4th Sat Holiday", type: "Weekend" };
     }
 
@@ -448,7 +448,7 @@ export default function AttendanceTimeSubmodule({ user }) {
             </form>
 
             {/* Calendar Days Header (Sun - Sat) */}
-            <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider font-inter border-b border-white/10 pb-2">
+            <div className="grid grid-cols-4 md:grid-cols-7 gap-1 md:gap-2 text-center text-xs font-semibold text-slate-400 uppercase tracking-wider font-inter border-b border-white/10 pb-2">
               <span className="text-rose-400">Sun</span>
               <span>Mon</span>
               <span>Tue</span>
@@ -459,7 +459,7 @@ export default function AttendanceTimeSubmodule({ user }) {
             </div>
 
             {/* Calendar Month Grid */}
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-4 md:grid-cols-7 gap-1 md:gap-2">
               {/* Empty leading padding slots */}
               {Array.from({ length: firstDayOfWeek }).map((_, idx) => (
                 <div key={`empty-${idx}`} className="h-32 rounded-xl bg-black/10 border border-white/5 opacity-30" />
@@ -526,7 +526,7 @@ export default function AttendanceTimeSubmodule({ user }) {
                   >
                     <div className="flex items-center justify-between">
                       <span
-                        className={`text-sm font-bold font-inter rounded-lg px-2 py-0.5 ${isToday
+                        className={`md:text-[14px] text-[10px] font-bold font-inter rounded-lg px-1 md:px-2 py-0.5 ${isToday
                           ? "bg-blue-500 text-white shadow"
                           : isHalfDayMixed
                             ? "bg-violet-600/40 text-violet-100 border border-violet-400/40"

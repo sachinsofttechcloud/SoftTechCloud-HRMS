@@ -64,7 +64,6 @@ export default function OnboardingForm() {
       name: "",
       email: "",
       password: "",
-      role: "EMPLOYEE",
       department: "Engineering",
       designation: "",
       phone: "",
@@ -450,36 +449,38 @@ export default function OnboardingForm() {
             <div className="flex items-center gap-2 pb-2 border-b border-white/10">
               <Briefcase className="h-5 w-5 text-blue-400" />
               <Heading className="!text-sm sm:!text-base !font-semibold !text-white font-inter">
-                Role & Organizational Placement
+                Organizational Placement
               </Heading>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="text-[14px] xl:text-[16px] font-medium !text-[#cfcaca] font-inter block mb-1.5">
-                  System Role *
+                  Department *
                 </label>
                 <div className="relative flex items-center">
+                  <Building2 className="pointer-events-none absolute left-3.5 h-4 w-4 text-blue-400" />
                   <select
-                    {...register("role")}
-                    className="w-full appearance-none rounded-xl border border-white/10 bg-[#0f172a] pl-4 pr-10 py-2.5 text-[12px] xl:text-[14px] text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none transition cursor-pointer"
+                    {...register("department")}
+                    className="w-full appearance-none rounded-xl border border-white/10 bg-[#0f172a] pl-10 pr-10 py-2.5 text-[12px] xl:text-[14px] text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none transition cursor-pointer"
                   >
-                    <option value="EMPLOYEE" className="bg-[#0f172a] text-white">EMPLOYEE</option>
-                    <option value="MANAGER" className="bg-[#0f172a] text-white">MANAGER</option>
-                    <option value="HR" className="bg-[#0f172a] text-white">HR</option>
-                    <option value="ADMIN" className="bg-[#0f172a] text-white">ADMIN</option>
+                    <option value="Engineering">Engineering</option>
+                    <option value="Human Resources">Human Resources (HR)</option>
+                    <option value="Sales">Sales</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Finance">Finance</option>
+                    <option value="Operations">Operations</option>
+                    <option value="Support">Support</option>
+                    <option value="Management">Management</option>
                   </select>
                   <ChevronDown className="pointer-events-none absolute right-3.5 h-4 w-4 text-slate-400" />
                 </div>
+                {errors.department && (
+                  <Description className="!text-xs !text-red-500 mt-1">
+                    {errors.department.message}
+                  </Description>
+                )}
               </div>
-
-              <InputField
-                label="Department *"
-                placeholder="e.g. Engineering, Sales, HR"
-                icon={Building2}
-                {...register("department")}
-                error={errors.department?.message}
-              />
 
               <InputField
                 label="Designation *"

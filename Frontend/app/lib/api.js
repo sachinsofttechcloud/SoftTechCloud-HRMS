@@ -1,5 +1,21 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
+function clearAuthSession() {
+  if (typeof window === "undefined") return;
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("authUser");
+  document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+}
+
+function redirectToLogin() {
+  if (typeof window === "undefined") return;
+  clearAuthSession();
+  if (window.location.pathname !== "/login-in") {
+    window.location.replace("/login-in");
+  }
+}
+
 /**
  * Universal fetch wrapper with error handling
  */
@@ -10,10 +26,12 @@ async function fetcher(endpoint, options = {}) {
   };
 
   // Attach token if present in localStorage
+  let hasAccessToken = false;
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("accessToken");
     if (token && !headers["Authorization"]) {
       headers["Authorization"] = `Bearer ${token}`;
+      hasAccessToken = true;
     }
   }
 
@@ -25,9 +43,18 @@ async function fetcher(endpoint, options = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    if (
+      hasAccessToken &&
+      response.status === 401 &&
+      (data.code === "TOKEN_EXPIRED" || data.error?.toLowerCase().includes("token"))
+    ) {
+      redirectToLogin();
+    }
+
     const errorMsg = data.error || data.message || `Request failed with status ${response.status}`;
     const error = new Error(errorMsg);
     error.status = response.status;
+    error.code = data.code;
     error.data = data;
     throw error;
   }
@@ -122,6 +149,13 @@ export async function apiUpdateProfile({ phone, address }) {
 export async function apiGetEmployees() {
   return await fetcher("/hr/employees", {
     method: "GET",
+  });
+}
+
+export async function apiToggleEmployeeStatus(userId, isActive) {
+  return await fetcher(`/hr/employee/${userId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ isActive }),
   });
 }
 
@@ -332,11 +366,8 @@ function triggerBrowserDownload(blob, fileName) {
  */
 export function apiLogout() {
   if (typeof window !== "undefined") {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    localStorage.removeItem("authUser");
-    document.cookie = "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    window.location.href = "/login-in";
+    clearAuthSession();
+    window.location.replace("/login-in");
   }
 }
 
@@ -377,4 +408,107 @@ export async function apiUpsertCompensation(payload) {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+/**
+ * Module Access / Roles & Permissions APIs
+ */
+export async function apiGetMyModules() {
+  return await fetcher("/access/my-modules", { method: "GET" });
+}
+
+export async function apiGetAccessModules() {
+  return await fetcher("/access/modules", { method: "GET" });
+}
+
+export async function apiGetAccessUsers({ search, status, role } = {}) {
+  const params = new URLSearchParams();
+  if (search) params.append("search", search);
+  if (status) params.append("status", status);
+  if (role) params.append("role", role);
+  const query = params.toString() ? `?${params.toString()}` : "";
+  return await fetcher(`/access/users${query}`, { method: "GET" });
+}
+
+export async function apiGetUserModuleAccess(userId) {
+  return await fetcher(`/access/users/${userId}`, { method: "GET" });
+}
+
+export async function apiUpdateUserModuleAccess(userId, moduleKeys) {
+  return await fetcher(`/access/users/${userId}`, {
+    method: "PUT",
+    body: JSON.stringify({ moduleKeys }),
+  });
+}
+
+export async function apiGetRolePermissionOverview() {
+  return await fetcher("/access/roles", { method: "GET" });
+}
+
+export async function apiCreateAccessRole(payload) {
+  return await fetcher("/access/roles", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiCreateManagedUser(payload) {
+  return await fetcher("/access/users", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiGetUpcomingExams() {
+  return await fetcher("/exams/upcoming-exams", { method: "GET" });
+}
+
+export async function apiGetActiveExams() {
+  return await fetcher("/exams/active-exams", { method: "GET" });
+}
+
+export async function apiGetPastExams() {
+  return await fetcher("/exams/past-exams", { method: "GET" });
+}
+
+export async function apiCreateExam(payload) {
+  return await fetcher("/exams/edit-exams", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export async function apiPreviewBulkExams(payload) {
+  return await fetcher("/exams/bulk/preview", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export async function apiCreateBulkExams(payload) {
+  return await fetcher("/exams/bulk", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export async function apiUpdateExam(id, payload) {
+  return await fetcher(`/exams/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+}
+
+export async function apiUpdateExamPayment(id, paymentStatus) {
+  return await fetcher(`/exams/${id}/payment`, {
+    method: "PATCH",
+    body: JSON.stringify({ paymentStatus }),
+  });
+}
+
+export async function apiCancelExam(id) {
+  return await fetcher(`/exams/${id}/cancel`, { method: "PATCH" });
+}
+
+export async function apiRescheduleExam(id, payload) {
+  return await fetcher(`/exams/${id}/reschedule`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiMarkExamAttendance(id, payload) {
+  return await fetcher(`/exams/${id}/attendance`, { method: "PATCH", body: JSON.stringify(payload) });
+}
+
+export async function apiDeleteExam(id) {
+  return await fetcher(`/exams/${id}`, { method: "DELETE" });
 }

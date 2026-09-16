@@ -53,6 +53,9 @@ export default function Topbar({ user, onMenuClick }) {
     if (pathname === "/home") return "Dashboard";
     if (pathname === "/attendance") return "Attendance & HRMS Modules";
     if (pathname === "/admin/onboarding") return "Employee Onboarding";
+    if (pathname === "/manage-users") return "Manage Users";
+    if (pathname.startsWith("/manage-users/roles")) return "Roles & Permissions";
+    if (pathname === "/exam") return "Exam";
     return "HRMS Portal";
   };
 
@@ -177,25 +180,24 @@ export default function Topbar({ user, onMenuClick }) {
                   notifications.map((n) => {
                     const typeMeta = notificationTypeMeta(n.type);
                     return (
-                    <div
-                      key={n.id}
-                      className={`p-2.5 rounded-xl text-xs space-y-1 transition ${
-                        !n.isRead ? "bg-blue-600/10 border border-blue-500/20" : "bg-black/20"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="font-semibold text-white block">{n.title}</span>
-                        {typeMeta && (
-                          <span className={`shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded border ${typeMeta.className}`}>
-                            {typeMeta.label}
-                          </span>
-                        )}
+                      <div
+                        key={n.id}
+                        className={`p-2.5 rounded-xl text-xs space-y-1 transition ${!n.isRead ? "bg-blue-600/10 border border-blue-500/20" : "bg-black/20"
+                          }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="font-semibold text-white block">{n.title}</span>
+                          {typeMeta && (
+                            <span className={`shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded border ${typeMeta.className}`}>
+                              {typeMeta.label}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-slate-300 text-[11px] leading-relaxed">{n.message}</p>
+                        <span className="text-[9px] text-slate-500 block font-mono">
+                          {formatNotificationWhen(n.createdAt)}
+                        </span>
                       </div>
-                      <p className="text-slate-300 text-[11px] leading-relaxed">{n.message}</p>
-                      <span className="text-[9px] text-slate-500 block font-mono">
-                        {formatNotificationWhen(n.createdAt)}
-                      </span>
-                    </div>
                     );
                   })
                 )}

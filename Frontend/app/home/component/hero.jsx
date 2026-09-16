@@ -118,7 +118,10 @@ export default function HeroSection() {
     }
   };
 
-  const isHrOrAdmin = ["HR", "ADMIN", "SUPER_ADMIN"].includes(user?.role);
+  const canOpenOnboarding =
+    user?.hasFullModuleAccess ||
+    ["ADMIN", "SUPER_ADMIN"].includes(user?.role) ||
+    (Array.isArray(user?.allowedModules) && user.allowedModules.includes("onboarding"));
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6">
@@ -137,7 +140,7 @@ export default function HeroSection() {
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-          {isHrOrAdmin && (
+          {canOpenOnboarding && (
             <Link
               href="/admin/onboarding"
               className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600/20 border border-blue-500/30 hover:bg-blue-600/30 px-3.5 py-2 text-xs font-semibold text-blue-300 transition"
@@ -268,7 +271,7 @@ export default function HeroSection() {
                 Open SoftTechCloud Webmail
               </button>
 
-              {isHrOrAdmin && (
+              {canOpenOnboarding && (
                 <Link
                   href="/admin/onboarding"
                   className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 px-4 py-2 text-xs font-semibold text-white transition"
