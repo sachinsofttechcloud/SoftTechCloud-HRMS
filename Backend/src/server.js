@@ -11,7 +11,11 @@ import compensationRoutes from "./routes/compensationRoutes.js";
 import payrollRoutes from "./routes/payrollRoutes.js";
 import { notifyEmployeeMilestones } from "./lib/employeeMilestones.js";
 import { grantDefaultsToExistingUsers } from "./lib/moduleAccess.js";
+import { sendDueExamReminders } from "./lib/examReminders.js";
 import examRoutes from "./routes/examRoutes.js";
+import leadRoutes from "./routes/leadRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+import { runLeadAutomation } from "./lib/leadAutomation.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -55,6 +59,8 @@ app.use("/api/compensation", compensationRoutes);
 app.use("/api/payroll", payrollRoutes);
 app.use("/api/access", accessRoutes);
 app.use("/api/exams", examRoutes);
+app.use("/api/leads", leadRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
@@ -75,9 +81,17 @@ app.listen(PORT, () => {
     console.warn("Default module access:", err.message)
   );
   notifyEmployeeMilestones().catch((err) => console.warn("Milestone notify:", err.message));
+  sendDueExamReminders().catch((err) => console.warn("Exam SMS reminder:", err.message));
+  runLeadAutomation().catch((err) => console.warn("Lead automation:", err.message));
   setInterval(() => {
     notifyEmployeeMilestones().catch((err) => console.warn("Milestone notify:", err.message));
   }, 60 * 60 * 1000);
+  setInterval(() => {
+    sendDueExamReminders().catch((err) => console.warn("Exam SMS reminder:", err.message));
+  }, 5 * 60 * 1000);
+  setInterval(() => {
+    runLeadAutomation().catch((err) => console.warn("Lead automation:", err.message));
+  }, 5 * 60 * 1000);
 });
 
 export default app;

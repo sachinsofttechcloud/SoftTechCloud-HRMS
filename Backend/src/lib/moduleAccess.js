@@ -4,7 +4,7 @@ import crypto from "crypto";
 export const FULL_ACCESS_ROLES = ["ADMIN", "SUPER_ADMIN"];
 export const DEFAULT_MODULE_KEYS = ["dashboard", "attendance"];
 
-/** Catalog of navigable modules. Exam is intentionally excluded. */
+/** Catalog of navigable modules. */
 export const APP_MODULE_CATALOG = [
   {
     key: "dashboard",
@@ -38,6 +38,22 @@ export const APP_MODULE_CATALOG = [
     route: "/manage-users",
     groupName: "Admin",
     sortOrder: 40,
+  },
+  {
+    key: "exam",
+    label: "Exam",
+    description: "Create, schedule, and manage candidate exams",
+    route: "/exam",
+    groupName: "Operations",
+    sortOrder: 50,
+  },
+  {
+    key: "leads",
+    label: "Lead Management",
+    description: "Own leads from enquiry through candidate conversion",
+    route: "/leads",
+    groupName: "Sales",
+    sortOrder: 60,
   },
 ];
 
@@ -115,7 +131,7 @@ export async function ensureAppModulesSeeded() {
   await prisma.$executeRawUnsafe(`
     UPDATE app_modules
     SET is_active = FALSE, updated_at = NOW()
-    WHERE key NOT IN ('dashboard', 'attendance', 'onboarding', 'manage_users')
+    WHERE key NOT IN ('dashboard', 'attendance', 'onboarding', 'manage_users', 'exam', 'leads')
   `);
 }
 

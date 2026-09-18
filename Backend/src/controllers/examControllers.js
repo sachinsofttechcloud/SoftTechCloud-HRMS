@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { sendDueExamReminders, sendExamReminderIfDue } from "../lib/examReminders.js";
 
 const MAX_BULK_ROWS = 100000;
 const PAYMENT_STATUSES = new Set(["PENDING", "COMPLETED"]);
@@ -39,8 +40,7 @@ function validateCandidate(input = {}) {
   const examDate = toDateKey(input.examDate);
   const examTime = String(input.examTime || "").trim();
   const voucher = toBoolean(input.voucher);
-  const rawCost = String(input.assistCost ?? "").trim();
-  const assistCost = voucher || rawCost === "" ? null : Number(rawCost);
+  const assistSupport = !voucher;
 
   if (!candidateName) errors.candidateName = "Please enter full name";
   if (!technology) errors.technology = "Please enter technology";
@@ -49,10 +49,6 @@ function validateCandidate(input = {}) {
   else if (!/^\+?[\d\s()-]{7,20}$/.test(mobileNo)) errors.mobileNo = "Please enter a valid mobile number";
   if (!examDate) errors.examDate = "Please enter exam date";
   if (!examTime) errors.examTime = "Please enter exam time";
-  if (!voucher && rawCost === "") errors.assistCost = "Please enter assist support cost";
-  else if (!voucher && (!Number.isFinite(assistCost) || assistCost < 0)) {
-    errors.assistCost = "Assist support cost must be zero or more";
-  }
 
   return {
     errors,
@@ -66,7 +62,7 @@ function validateCandidate(input = {}) {
       examDate,
       examTime,
       voucher,
-      assistCost,
+      assistSupport,
     },
   };
 }
@@ -76,20 +72,22 @@ async function insertExam(data) {
   const exams = await prisma.$queryRaw`
     INSERT INTO exams (
       candidate_name, technology, exam_name, mobile_no, mode, center_name,
-      exam_date, exam_time, voucher, assist_cost, payment_status,
+      exam_date, exam_time, voucher, assist_support, payment_status,
       lifecycle_status, updated_at
     )
     VALUES (
       ${data.candidateName}, ${data.technology}, ${data.examName}, ${data.mobileNo},
       'ONLINE', NULL, ${parsedExamDate}, ${data.examTime}, ${data.voucher},
-      ${data.assistCost}, 'PENDING', 'SCHEDULED', CURRENT_TIMESTAMP
+      ${data.assistSupport}, 'PENDING', 'SCHEDULED', CURRENT_TIMESTAMP
     )
     RETURNING
       id, candidate_name AS "candidateName", technology, exam_name AS "examName",
       mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
-      voucher, assist_cost AS "assistCost", payment_status AS "paymentStatus",
+      voucher, assist_support AS "assistSupport", payment_status AS "paymentStatus",
       lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
-      attended, created_at AS "createdAt", updated_at AS "updatedAt"
+      attended, reminder_sent_at AS "reminderSentAt",
+      one_hour_reminder_sent_at AS "oneHourReminderSentAt",
+      created_at AS "createdAt", updated_at AS "updatedAt"
   `;
   return exams[0];
 }
@@ -147,9 +145,11 @@ export async function getUpcomingExams(req, res) {
     const exams = await prisma.$queryRaw`
       SELECT id, candidate_name AS "candidateName", technology, exam_name AS "examName",
         mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
-        voucher, assist_cost AS "assistCost", payment_status AS "paymentStatus",
+        voucher, assist_support AS "assistSupport", payment_status AS "paymentStatus",
         lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
-        attended, created_at AS "createdAt", updated_at AS "updatedAt"
+        attended, reminder_sent_at AS "reminderSentAt",
+        one_hour_reminder_sent_at AS "oneHourReminderSentAt",
+        created_at AS "createdAt", updated_at AS "updatedAt"
       FROM exams
       WHERE exam_date > CURRENT_DATE
         AND lifecycle_status = 'SCHEDULED' AND payment_status = 'PENDING'
@@ -167,9 +167,11 @@ export async function getActiveExams(req, res) {
     const exams = await prisma.$queryRaw`
       SELECT id, candidate_name AS "candidateName", technology, exam_name AS "examName",
         mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
-        voucher, assist_cost AS "assistCost", payment_status AS "paymentStatus",
+        voucher, assist_support AS "assistSupport", payment_status AS "paymentStatus",
         lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
-        attended, created_at AS "createdAt", updated_at AS "updatedAt"
+        attended, reminder_sent_at AS "reminderSentAt",
+        one_hour_reminder_sent_at AS "oneHourReminderSentAt",
+        created_at AS "createdAt", updated_at AS "updatedAt"
       FROM exams
       WHERE exam_date = CURRENT_DATE
         AND lifecycle_status = 'SCHEDULED' AND payment_status = 'PENDING'
@@ -187,9 +189,11 @@ export async function getPastExams(req, res) {
     const exams = await prisma.$queryRaw`
       SELECT id, candidate_name AS "candidateName", technology, exam_name AS "examName",
         mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
-        voucher, assist_cost AS "assistCost", payment_status AS "paymentStatus",
+        voucher, assist_support AS "assistSupport", payment_status AS "paymentStatus",
         lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
-        attended, created_at AS "createdAt", updated_at AS "updatedAt"
+        attended, reminder_sent_at AS "reminderSentAt",
+        one_hour_reminder_sent_at AS "oneHourReminderSentAt",
+        created_at AS "createdAt", updated_at AS "updatedAt"
       FROM exams
       WHERE exam_date < CURRENT_DATE
         OR payment_status = 'COMPLETED' OR lifecycle_status = 'CANCELLED'
@@ -207,7 +211,11 @@ export async function createExam(req, res) {
     const { errors, data } = validateCandidate(req.body);
     const errorList = Object.values(errors);
     if (errorList.length) return res.status(400).json({ error: errorList[0], errors });
-    res.status(201).json(await insertExam(data));
+    const exam = await insertExam(data);
+    sendExamReminderIfDue(exam).catch((err) =>
+      console.warn("[EXAM SMS] Create reminder:", err.message)
+    );
+    res.status(201).json(exam);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to create exam" });
@@ -243,6 +251,9 @@ export async function createBulkExams(req, res) {
     }
     const created = [];
     for (const row of ready) created.push(await insertExam(row));
+    sendDueExamReminders().catch((err) =>
+      console.warn("[EXAM SMS] Bulk reminder:", err.message)
+    );
     res.status(201).json({
       message: "Candidate details submitted successfully",
       created: created.length,
@@ -308,11 +319,16 @@ export async function rescheduleExam(req, res) {
     const parsedExamDate = new Date(`${examDate}T00:00:00.000Z`);
     const exams = await prisma.$queryRaw`
       UPDATE exams SET exam_date = ${parsedExamDate}, exam_time = ${examTime},
+        reminder_sent_at = NULL, one_hour_reminder_sent_at = NULL,
+        seven_day_reminder_sent_at = NULL, three_day_reminder_sent_at = NULL,
+        two_hour_reminder_sent_at = NULL,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ${examId} AND exam_date = CURRENT_DATE
         AND lifecycle_status = 'SCHEDULED' AND payment_status = 'PENDING'
         AND CAST(${parsedExamDate} AS DATE) >= CURRENT_DATE
-      RETURNING id, exam_date AS "examDate", exam_time AS "examTime"
+      RETURNING id, exam_date AS "examDate", exam_time AS "examTime",
+        reminder_sent_at AS "reminderSentAt",
+        one_hour_reminder_sent_at AS "oneHourReminderSentAt"
     `;
     if (!exams.length) {
       return res.status(409).json({ error: "Only an active exam can be rescheduled to today or later" });

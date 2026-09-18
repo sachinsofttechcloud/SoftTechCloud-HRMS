@@ -1,0 +1,2 @@
+ALTER TABLE "exams"
+ADD COLUMN IF NOT EXISTS "reminder_sent_at" TIMESTAMP(3);

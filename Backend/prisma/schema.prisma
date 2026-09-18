@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../generated/prisma"
 }
 
 datasource db {
@@ -43,6 +44,9 @@ model User {
   bankDetail          BankDetail?
   moduleAccessGrants  UserModuleAccess[]   @relation("UserModuleAccessTarget")
   moduleAccessGranted UserModuleAccess[]   @relation("UserModuleAccessGrantedBy")
+  assignedLeads       Lead[]               @relation("LeadAssignee")
+  createdLeads        Lead[]               @relation("LeadCreator")
+  leadActivities      LeadActivity[]
 
   @@map("users")
 }
@@ -314,23 +318,199 @@ enum LeaveType {
 }
 
 model Exam {
-  id              Int       @id @default(autoincrement())
-  candidateName   String    @map("candidate_name")
-  technology      String
-  examName        String    @map("exam_name")
-  mobileNo        String    @map("mobile_no")
-  mode            String    @default("ONLINE")
-  centerName      String?   @map("center_name")
-  examDate        DateTime  @map("exam_date") @db.Date
-  examTime        String    @map("exam_time")
-  voucher         Boolean   @default(false)
-  assistCost      Float?    @map("assist_cost")
-  paymentStatus   String    @default("PENDING") @map("payment_status")
-  lifecycleStatus String    @default("SCHEDULED") @map("lifecycle_status")
-  cancelledAt     DateTime? @map("cancelled_at")
-  attended        Boolean?
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  id                     Int           @id @default(autoincrement())
+  candidateName          String        @map("candidate_name")
+  technology             String
+  examName               String        @map("exam_name")
+  mobileNo               String        @map("mobile_no")
+  mode                   String        @default("ONLINE")
+  centerName             String?       @map("center_name")
+  examDate               DateTime      @map("exam_date") @db.Date
+  examTime               String        @map("exam_time")
+  voucher                Boolean       @default(false)
+  assistSupport          Boolean       @default(true) @map("assist_support")
+  paymentStatus          String        @default("PENDING") @map("payment_status")
+  lifecycleStatus        String        @default("SCHEDULED") @map("lifecycle_status")
+  cancelledAt            DateTime?     @map("cancelled_at")
+  reminderSentAt         DateTime?     @map("reminder_sent_at")
+  oneHourReminderSentAt  DateTime?     @map("one_hour_reminder_sent_at")
+  sevenDayReminderSentAt DateTime?     @map("seven_day_reminder_sent_at")
+  threeDayReminderSentAt DateTime?     @map("three_day_reminder_sent_at")
+  twoHourReminderSentAt  DateTime?     @map("two_hour_reminder_sent_at")
+  attended               Boolean?
+  documentStatus         String        @default("PENDING") @map("document_status")
+  confirmationStatus     String        @default("PENDING") @map("confirmation_status")
+  voucherStatus          String        @default("PENDING") @map("voucher_status")
+  voucherExpiryAt        DateTime?     @map("voucher_expiry_at") @db.Date
+  candidateId            String?       @map("candidate_id")
+  createdAt              DateTime      @default(now()) @map("created_at")
+  updatedAt              DateTime      @updatedAt @map("updated_at")
+  candidate              Candidate?    @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  supportCases           SupportCase[]
 
+  @@index([candidateId])
   @@map("exams")
+}
+
+model Candidate {
+  id               String    @id @default(uuid())
+  candidateCode    String    @unique @map("candidate_code")
+  fullLegalName    String    @map("full_legal_name")
+  mobileNumber     String    @unique @map("mobile_number")
+  whatsappNumber   String?   @map("whatsapp_number")
+  email            String?
+  dateOfBirth      DateTime? @map("date_of_birth") @db.Date
+  address          String?
+  identityDocument String?   @map("identity_document")
+  providerIds      Json?     @map("provider_ids")
+  companyName      String?   @map("company_name")
+  collegeName      String?   @map("college_name")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+  leads            Lead[]
+  exams            Exam[]
+
+  @@index([email])
+  @@map("candidates")
+}
+
+model Lead {
+  id                    String             @id @default(uuid())
+  leadCode              String             @unique @map("lead_code")
+  candidateId           String?            @map("candidate_id")
+  fullName              String             @map("full_name")
+  mobileNumber          String             @map("mobile_number")
+  whatsappNumber        String             @map("whatsapp_number")
+  email                 String?
+  technology            String
+  examName              String             @map("exam_name")
+  examCode              String             @map("exam_code")
+  mode                  String
+  preferredDate         DateTime           @map("preferred_date") @db.Date
+  preferredTime         String             @map("preferred_time")
+  voucherNeed           Boolean            @default(false) @map("voucher_need")
+  quotedFee             Decimal            @map("quoted_fee") @db.Decimal(12, 2)
+  companyReimbursement  Boolean            @default(false) @map("company_reimbursement")
+  companyName           String?            @map("company_name")
+  source                String
+  campaign              String?
+  assignedEmployeeId    String             @map("assigned_employee_id")
+  status                String             @default("ACTIVE")
+  stage                 String             @default("NEW")
+  priority              String             @default("MEDIUM")
+  lastContactAt         DateTime?          @map("last_contact_at")
+  nextActionAt          DateTime           @map("next_action_at")
+  nextAction            String             @map("next_action")
+  remarks               String?
+  lostReason            String?            @map("lost_reason")
+  convertedAt           DateTime?          @map("converted_at")
+  overdueEscalatedAt    DateTime?          @map("overdue_escalated_at")
+  paymentReminderSentAt DateTime?          @map("payment_reminder_sent_at")
+  createdById           String             @map("created_by_id")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+  candidate             Candidate?         @relation(fields: [candidateId], references: [id], onDelete: SetNull)
+  assignedEmployee      User               @relation("LeadAssignee", fields: [assignedEmployeeId], references: [id])
+  createdBy             User               @relation("LeadCreator", fields: [createdById], references: [id])
+  activities            LeadActivity[]
+  paymentAction         LeadPaymentAction?
+  supportCases          SupportCase[]
+
+  @@index([mobileNumber])
+  @@index([email])
+  @@index([companyName])
+  @@index([stage])
+  @@index([assignedEmployeeId])
+  @@index([nextActionAt])
+  @@map("leads")
+}
+
+model LeadActivity {
+  id        String   @id @default(uuid())
+  leadId    String   @map("lead_id")
+  userId    String?  @map("user_id")
+  type      String
+  title     String
+  details   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([leadId, createdAt])
+  @@map("lead_activities")
+}
+
+model LeadPaymentAction {
+  id                  String    @id @default(uuid())
+  leadId              String    @unique @map("lead_id")
+  amountDue           Decimal   @map("amount_due") @db.Decimal(12, 2)
+  amountPaid          Decimal   @default(0) @map("amount_paid") @db.Decimal(12, 2)
+  commitmentDate      DateTime? @map("commitment_date") @db.Date
+  channel             String    @default("Direct")
+  verificationStatus  String    @default("PENDING") @map("verification_status")
+  reimbursementStatus String    @default("NOT_REQUIRED") @map("reimbursement_status")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  lead                Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([commitmentDate])
+  @@map("lead_payment_actions")
+}
+
+model DashboardMaintenance {
+  id        String   @id @default(uuid())
+  title     String
+  type      String
+  due       DateTime @db.Date
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([due])
+  @@map("dashboard_maintenance")
+}
+
+model DashboardReminder {
+  id        String   @id @default(uuid())
+  title     String
+  type      String
+  date      DateTime
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([date])
+  @@map("dashboard_reminders")
+}
+
+model SupportCase {
+  id            String   @id @default(uuid())
+  caseCode      String   @unique @map("case_code")
+  candidateName String   @map("candidate_name")
+  type          String
+  status        String   @default("OPEN")
+  opened        DateTime @default(now()) @db.Date
+  owner         String
+  leadId        String?  @map("lead_id")
+  examId        Int?     @map("exam_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  lead          Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  exam          Exam?    @relation(fields: [examId], references: [id], onDelete: SetNull)
+
+  @@index([leadId])
+  @@index([examId])
+  @@index([status])
+  @@map("support_cases")
+}
+
+model MonthlyRevenue {
+  id                String   @id @default(uuid())
+  month             DateTime @unique @db.Date
+  supportCostActual Decimal  @default(0) @map("support_cost_actual") @db.Decimal(14, 2)
+  voucherCost       Decimal  @default(0) @map("voucher_cost") @db.Decimal(14, 2)
+  supportSetupCost  Decimal  @default(0) @map("support_setup_cost") @db.Decimal(14, 2)
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("monthly_revenue")
 }
