@@ -293,7 +293,16 @@ function caseDto(item) {
 export async function getDashboard(req, res) {
   try {
     const today = startOfToday();
+    const endToday = new Date(today.getTime() + 86400000 - 1);
+    const startTomorrow = new Date(today.getTime() + 86400000);
+    const endTomorrow = new Date(today.getTime() + 2 * 86400000 - 1);
     const nextEightDays = new Date(today.getTime() + 8 * 86400000);
+
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+
     const monthStart = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
     const nextMonth = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 1));
 
@@ -308,6 +317,21 @@ export async function getDashboard(req, res) {
       cases,
       revenue,
       employees,
+      recentDeals,
+      // Aggregates for summary cards
+      allLeadsCount,
+      todayLeadsCount,
+      tomorrowLeadsCount,
+      thisWeekLeadsCount,
+      thisMonthLeadsCount,
+      todayDueCount,
+      overdueCount,
+      todayExamsCount,
+      next7DaysExamsCount,
+      voucherNeedCount,
+      assistSupportCount,
+      allLeadsForGraph,
+      allExamsForGraph,
     ] = await Promise.all([
       prisma.lead.findMany({
         where: {
@@ -363,10 +387,104 @@ export async function getDashboard(req, res) {
         select: { id: true, name: true, employeeId: true },
         orderBy: { name: "asc" },
       }),
+      prisma.lead.findMany({
+        where: {
+          stage: { in: ["CONVERTED", "PAYMENT_PENDING", "PARTIALLY_PAID", "SCHEDULING_PENDING", "REQUIREMENT_IDENTIFIED", "DETAILS_SHARED"] },
+        },
+        include: LEAD_INCLUDE,
+        orderBy: { updatedAt: "desc" },
+        take: 10,
+      }),
+      // Stats counts
+      prisma.lead.count(),
+      prisma.lead.count({ where: { createdAt: { gte: today, lte: endToday } } }),
+      prisma.lead.count({
+        where: {
+          OR: [
+            { preferredDate: { gte: startTomorrow, lte: endTomorrow } },
+            { createdAt: { gte: startTomorrow, lte: endTomorrow } },
+          ],
+        },
+      }),
+      prisma.lead.count({ where: { createdAt: { gte: startOfWeek } } }),
+      prisma.lead.count({ where: { createdAt: { gte: monthStart } } }),
+      prisma.lead.count({
+        where: { status: "ACTIVE", nextActionAt: { gte: today, lte: endToday } },
+      }),
+      prisma.lead.count({
+        where: { status: "ACTIVE", nextActionAt: { lt: today } },
+      }),
+      prisma.exam.count({
+        where: { lifecycleStatus: "SCHEDULED", examDate: { gte: today, lte: endToday } },
+      }),
+      prisma.exam.count({
+        where: { lifecycleStatus: "SCHEDULED", examDate: { gte: today, lt: nextEightDays } },
+      }),
+      prisma.lead.count({ where: { voucherNeed: true } }),
+      prisma.lead.count({ where: { voucherNeed: false } }),
+      prisma.lead.findMany({
+        select: { createdAt: true, stage: true, quotedFee: true },
+      }),
+      prisma.exam.findMany({
+        select: { createdAt: true, examDate: true },
+      }),
     ]);
 
+    // Build monthly graph dataset for last 12 months
+    const monthlyGraph = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      const mStart = new Date(Date.UTC(d.getFullYear(), d.getMonth(), 1));
+      const mEnd = new Date(Date.UTC(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999));
+      const monthLabel = d.toLocaleString("en-US", { month: "short" });
+
+      const monthLeads = allLeadsForGraph.filter(
+        (l) => l.createdAt >= mStart && l.createdAt <= mEnd
+      );
+      const monthExams = allExamsForGraph.filter(
+        (e) => (e.examDate || e.createdAt) >= mStart && (e.examDate || e.createdAt) <= mEnd
+      );
+      const monthConversions = monthLeads.filter((l) => l.stage === "CONVERTED");
+      const monthRevenue = monthConversions.reduce((acc, cur) => acc + Number(cur.quotedFee || 0), 0);
+
+      monthlyGraph.push({
+        month: monthLabel,
+        year: d.getFullYear(),
+        leads: monthLeads.length,
+        exams: monthExams.length,
+        conversions: monthConversions.length,
+        revenue: monthRevenue,
+      });
+    }
+
     res.json({
+      summaryStats: {
+        lead: {
+          total: allLeadsCount,
+          today: todayLeadsCount,
+          tomorrow: tomorrowLeadsCount,
+          thisWeek: thisWeekLeadsCount,
+          thisMonth: thisMonthLeadsCount,
+        },
+        followUp: {
+          totalDue: todayDueCount + overdueCount,
+          todayDue: todayDueCount,
+          overdue: overdueCount,
+        },
+        upcomingExam: {
+          total: next7DaysExamsCount,
+          today: todayExamsCount,
+          next7Days: next7DaysExamsCount,
+        },
+        voucherAction: {
+          total: voucherNeedCount + assistSupportCount,
+          voucherIncluded: voucherNeedCount,
+          assistIncluded: assistSupportCount,
+        },
+      },
+      monthlyGraph,
       newLeads: newLeads.map(newLeadDto),
+      recentDeals: recentDeals.map(newLeadDto),
       followUps: followUps.map(followUpDto),
       upcomingExams: exams.map(examDto),
       voucherActions: voucherExams.map(voucherDto),

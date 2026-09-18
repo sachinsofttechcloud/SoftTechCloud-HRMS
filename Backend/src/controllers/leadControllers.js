@@ -104,16 +104,56 @@ export async function listLeads(req, res) {
     const where = {};
     if (stage && LEAD_STAGES.includes(stage)) where.stage = stage;
     if (assignedTo) where.assignedEmployeeId = assignedTo;
-    if (filter === "OVERDUE") where.nextActionAt = { lt: new Date() };
-    if (filter === "MINE") where.assignedEmployeeId = req.user.id;
-    if (filter === "DUPLICATE") {
+
+    const startToday = new Date();
+    startToday.setHours(0, 0, 0, 0);
+    const endToday = new Date();
+    endToday.setHours(23, 59, 59, 999);
+
+    const startTomorrow = new Date(startToday);
+    startTomorrow.setDate(startTomorrow.getDate() + 1);
+    const endTomorrow = new Date(endToday);
+    endTomorrow.setDate(endTomorrow.getDate() + 1);
+
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    if (filter === "OVERDUE" || filter === "overdue") {
+      where.nextActionAt = { lt: new Date() };
+      where.status = "ACTIVE";
+    } else if (filter === "MINE" || filter === "mine") {
+      where.assignedEmployeeId = req.user.id;
+    } else if (filter === "DUPLICATE") {
       const duplicates = await prisma.lead.groupBy({
         by: ["mobileNumber"],
         _count: { mobileNumber: true },
         having: { mobileNumber: { _count: { gt: 1 } } },
       });
       where.mobileNumber = { in: duplicates.map((row) => row.mobileNumber) };
+    } else if (filter === "today") {
+      where.createdAt = { gte: startToday, lte: endToday };
+    } else if (filter === "tomorrow") {
+      where.OR = [
+        { preferredDate: { gte: startTomorrow, lte: endTomorrow } },
+        { createdAt: { gte: startTomorrow, lte: endTomorrow } },
+      ];
+    } else if (filter === "this_week" || filter === "week") {
+      where.createdAt = { gte: startOfWeek };
+    } else if (filter === "this_month" || filter === "month") {
+      where.createdAt = { gte: startOfMonth };
+    } else if (filter === "today_due") {
+      where.nextActionAt = { gte: startToday, lte: endToday };
+      where.status = "ACTIVE";
+    } else if (filter === "voucher_included") {
+      where.voucherNeed = true;
+    } else if (filter === "assist_included") {
+      where.voucherNeed = false;
     }
+
     if (search) {
       where.OR = [
         { leadCode: { contains: search, mode: "insensitive" } },
