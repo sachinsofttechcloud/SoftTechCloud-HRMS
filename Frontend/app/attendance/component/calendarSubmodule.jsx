@@ -9,17 +9,6 @@ import { useEffect, useState } from "react";
  * Submodule 3: Organization Calendar View
  */
 export default function CalendarSubmodule() {
-    // const holidays = [
-    //     { date: "26 Jan 2026", day: "Monday", title: "Republic Day", type: "National Holiday" },
-    //     { date: "15 Aug 2026", day: "Saturday", title: "Independence Day", type: "National Holiday" },
-    //     { date: " 14 Sept 2026", day: "Monday", title: "Half Day Ganesh Chaturthi", type: "Company Event" },
-    //     { date: "25 Sept 2026", day: "Friday", title: "Ganesh Visarjan", type: "Festival Holiday" },
-    //     { date: "2 Oct 2026", day: "Friday", title: "Gandhi Jayanti", type: "National Holiday" },
-    //     { date: "20 Oct 2026", day: "Tuesday", title: "Dussehara", type: "Festival Holiday" },
-    //     { date: "8-11 Nov 2026", day: "Sun-Wed", title: "Diwali Festival", type: "Festival Holiday" },
-    //     { date: "25 Dec 2026", day: "Friday", title: "Christmas Day", type: "National Holiday" },
-    //     { date: "31 DEC 2026", day: "Thursday", title: "Year-End Holiday", type: "Holidhay" },
-    // ];
     const [holidays, setHoliday] = useState([]);
     const [loading, setLoading] = useState(false);
 

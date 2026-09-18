@@ -41,6 +41,16 @@ export default function ExamView() {
     const [refreshKey, setRefreshKey] = useState(0);
     const menuRef = useRef(null);
 
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const params = new URLSearchParams(window.location.search);
+            const tabParam = params.get("tab");
+            if (tabParam && ["Active", "Upcoming", "Past"].includes(tabParam)) {
+                setActiveSubmodule(tabParam);
+            }
+        }
+    }, []);
+
     const submodules = [
         {
             id: "Active",

@@ -244,6 +244,16 @@ export default function LeadManagementView() {
   const [pageSize, setPageSize] = useState(10);
   const [converting, setConverting] = useState("");
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const filterParam = params.get("filter");
+      if (filterParam) {
+        setFilter(filterParam);
+      }
+    }
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
