@@ -121,6 +121,15 @@ export const ExamIcon = (p) => (
   </svg>
 );
 
+export const LeadIcon = (p) => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <circle cx="9" cy="8" r="3" />
+    <path d="M3 20c0-3.3 2.7-6 6-6 1.4 0 2.7.5 3.7 1.3" />
+    <path d="M16 11l2 2 4-4" />
+    <path d="M16 17h5" />
+  </svg>
+);
+
 export const ManageUsersIcon = (p) => (
   <svg
     viewBox="0 0 24 24"

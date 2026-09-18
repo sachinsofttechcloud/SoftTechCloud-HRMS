@@ -56,6 +56,7 @@ export default function Topbar({ user, onMenuClick }) {
     if (pathname === "/manage-users") return "Manage Users";
     if (pathname.startsWith("/manage-users/roles")) return "Roles & Permissions";
     if (pathname === "/exam") return "Exam";
+    if (pathname === "/leads") return "Leads Management";
     return "HRMS Portal";
   };
 
@@ -115,9 +116,9 @@ export default function Topbar({ user, onMenuClick }) {
           <Heading className="!text-[16px] xl:!text-[24px] !text-white tracking-tight font-inter">
             {getPageTitle()}
           </Heading>
-          <Description className="!text-[8px] xl:!text-[12px] !text-slate-400 hidden sm:block mt-0.5">
+          {/* <Description className="!text-[8px] xl:!text-[12px] !text-slate-400 hidden sm:block mt-0.5">
             SoftTechCloud Enterprise HRMS Portal
-          </Description>
+          </Description> */}
         </div>
       </div>
 

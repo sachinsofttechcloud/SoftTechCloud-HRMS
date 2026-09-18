@@ -215,7 +215,7 @@ export default function BulkImportModal({ onClose, onImported }) {
                         <th className="px-3 py-2">Exam</th>
                         <th className="px-3 py-2">Mobile</th>
                         <th className="px-3 py-2">Schedule</th>
-                        <th className="px-3 py-2">Voucher / Cost</th>
+                        <th className="px-3 py-2">Voucher / Assist</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -227,7 +227,7 @@ export default function BulkImportModal({ onClose, onImported }) {
                           <td className="px-3 py-2">{row.mobileNo}</td>
                           <td className="px-3 py-2">{row.examDate} {row.examTime}</td>
                           <td className="px-3 py-2">
-                            {row.voucher ? "Voucher + Assist" : Number(row.assistCost) > 0 ? `₹${row.assistCost}` : "—"}
+                            Voucher: {row.voucher ? "True" : "False"} / Assist: {row.assistSupport ? "True" : "False"}
                           </td>
                         </tr>
                       ))}

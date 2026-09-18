@@ -104,8 +104,7 @@ const EXAM_HEADER_MAP = {
   examendtime: "endTime",
   endtime: "endTime",
   voucher: "voucher",
-  assistcost: "assistCost",
-  assistsupportcost: "assistCost",
+  assistsupport: "assistSupport",
 };
 
 function excelTimeToDisplay(value) {
@@ -143,7 +142,7 @@ export function downloadExamTemplate() {
       "Start Time": "10:00 Am",
       "End Time": "12:00 Pm",
       Voucher: "No",
-      "Assist Support Cost": 1500,
+      "Assist Support": "True",
     },
     {
       "Full Name": "Jane Smith",
@@ -154,7 +153,7 @@ export function downloadExamTemplate() {
       "Start Time": "02:00 Pm",
       "End Time": "04:00 Pm",
       Voucher: "Yes",
-      "Assist Support Cost": "",
+      "Assist Support": "False",
     },
   ];
   downloadExcel("exam-candidate-template.xlsx", rows, "Candidates");
@@ -188,7 +187,7 @@ export async function parseExamExcel(file) {
         examDate: excelDateToYmd(mapped.examDate),
         examTime,
         voucher: String(mapped.voucher || "").trim(),
-        assistCost: mapped.assistCost === "" ? "" : Number(mapped.assistCost),
+        assistSupport: String(mapped.assistSupport || "").trim(),
       };
     })
     .filter(
@@ -200,6 +199,6 @@ export async function parseExamExcel(file) {
         row.examDate ||
         row.examTime ||
         row.voucher ||
-        row.assistCost !== ""
+        row.assistSupport
     );
 }

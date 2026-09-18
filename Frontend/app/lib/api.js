@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
 
 function clearAuthSession() {
   if (typeof window === "undefined") return;
@@ -511,4 +511,64 @@ export async function apiMarkExamAttendance(id, payload) {
 
 export async function apiDeleteExam(id) {
   return await fetcher(`/exams/${id}`, { method: "DELETE" });
+}
+
+export async function apiGetLeads({ search, stage, assignedTo, filter } = {}) {
+  const params = new URLSearchParams();
+  if (search) params.append("search", search);
+  if (stage) params.append("stage", stage);
+  if (assignedTo) params.append("assignedTo", assignedTo);
+  if (filter) params.append("filter", filter);
+  const query = params.toString() ? `?${params.toString()}` : "";
+  return await fetcher(`/leads${query}`, { method: "GET" });
+}
+
+export async function apiGetLeadSummary() {
+  return await fetcher("/leads/summary", { method: "GET" });
+}
+
+export async function apiCheckLeadDuplicates({ mobile, email, company } = {}) {
+  const params = new URLSearchParams();
+  if (mobile) params.append("mobile", mobile);
+  if (email) params.append("email", email);
+  if (company) params.append("company", company);
+  return await fetcher(`/leads/duplicates?${params.toString()}`, { method: "GET" });
+}
+
+export async function apiCreateLead(payload) {
+  return await fetcher("/leads", { method: "POST", body: JSON.stringify(payload) });
+}
+
+export async function apiUpdateLead(id, payload) {
+  return await fetcher(`/leads/${id}`, { method: "PUT", body: JSON.stringify(payload) });
+}
+
+export async function apiConvertLead(id, payload = {}) {
+  return await fetcher(`/leads/${id}/convert`, { method: "POST", body: JSON.stringify(payload) });
+}
+
+export async function apiGetCandidates() {
+  return await fetcher("/leads/candidates", { method: "GET" });
+}
+
+export async function apiGetDashboard() {
+  return await fetcher("/dashboard", { method: "GET" });
+}
+
+export async function apiCreateDashboardRecord(resource, payload) {
+  return await fetcher(`/dashboard/${resource}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiUpdateDashboardRecord(resource, id, payload) {
+  return await fetcher(`/dashboard/${resource}/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiDeleteDashboardRecord(resource, id) {
+  return await fetcher(`/dashboard/${resource}/${id}`, { method: "DELETE" });
 }

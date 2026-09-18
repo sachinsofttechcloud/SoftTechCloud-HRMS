@@ -1,7 +1,8 @@
+
 "use client";
 
-import { useState } from "react";
-import { Award, Calendar, Check, Clock, IndianRupee, Loader2, Phone, User, X, Cpu } from "lucide-react";
+import { useRef, useState } from "react";
+import { Award, Calendar, Check, Clock, Loader2, Phone, User, X, Cpu } from "lucide-react";
 import { apiCreateExam } from "@/app/lib/api";
 
 const EMPTY_FORM = {
@@ -13,7 +14,6 @@ const EMPTY_FORM = {
   startTime: "",
   endTime: "",
   voucher: false,
-  assistCost: "",
 };
 
 function toDisplayTime(value) {
@@ -39,11 +39,37 @@ function Field({ label, error, children }) {
 const inputClass =
   "w-full rounded-xl border bg-black/30 px-3 py-2.5 text-xs text-white outline-none placeholder:text-slate-600 focus:border-blue-500";
 
+// Native date/time inputs default to the OS's light picker even inside a dark UI,
+// which is what produced the "black calendar" look. Forcing color-scheme: dark
+// tells the browser to render its own picker/calendar popup in a dark theme
+// that matches the rest of the drawer.
+const nativePickerStyle = { colorScheme: "dark" };
+
+// Opens the native date/time picker programmatically so the calendar/clock
+// icon itself is clickable, not just the input text.
+function openPicker(ref) {
+  const node = ref.current;
+  if (!node) return;
+  if (typeof node.showPicker === "function") {
+    try {
+      node.showPicker();
+      return;
+    } catch {
+      // fall through to focus if showPicker is blocked (e.g. not user-triggered)
+    }
+  }
+  node.focus();
+}
+
 export default function AddCandidateDrawer({ onClose, onCreated }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
   const [serverError, setServerError] = useState("");
+
+  const dateInputRef = useRef(null);
+  const startTimeInputRef = useRef(null);
+  const endTimeInputRef = useRef(null);
 
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -65,8 +91,6 @@ export default function AddCandidateDrawer({ onClose, onCreated }) {
     if (!form.examDate) nextErrors.examDate = "Please enter exam date";
     if (!form.startTime) nextErrors.startTime = "Please enter start time";
     if (!form.endTime) nextErrors.endTime = "Please enter end time";
-    if (!form.voucher && form.assistCost === "") nextErrors.assistCost = "Please enter assist support cost";
-    else if (!form.voucher && Number(form.assistCost) < 0) nextErrors.assistCost = "Cost cannot be negative";
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -87,7 +111,7 @@ export default function AddCandidateDrawer({ onClose, onCreated }) {
         examTime: `${toDisplayTime(form.startTime)} to ${toDisplayTime(form.endTime)}`,
         mode: "ONLINE",
         voucher: form.voucher,
-        assistCost: form.voucher ? null : Number(form.assistCost),
+        assistSupport: !form.voucher,
       });
       onCreated?.(exam);
     } catch (err) {
@@ -175,36 +199,82 @@ export default function AddCandidateDrawer({ onClose, onCreated }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Exam date" error={errors.examDate}>
               <div className="relative">
-                <Calendar size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <button
+                  type="button"
+                  onClick={() => openPicker(dateInputRef)}
+                  className="absolute left-3 top-1/2 z-10 -translate-y-1/2 text-slate-500 hover:text-blue-400"
+                  aria-label="Open calendar"
+                  tabIndex={-1}
+                >
+                  <Calendar size={14} />
+                </button>
                 <input
+                  ref={dateInputRef}
                   type="date"
                   value={form.examDate}
                   onChange={(event) => updateField("examDate", event.target.value)}
-                  className={`${inputClass} pl-9 ${errors.examDate ? "border-rose-500/50" : "border-white/10"}`}
+                  style={nativePickerStyle}
+                  className={`${inputClass} pl-9 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 ${
+                    errors.examDate ? "border-rose-500/50" : "border-white/10"
+                  }`}
                 />
               </div>
             </Field>
 
             <Field label="Start time" error={errors.startTime}>
               <div className="relative">
-                <Clock size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <button
+                  type="button"
+                  onClick={() => openPicker(startTimeInputRef)}
+                  className="absolute left-3 top-1/2 z-10 -translate-y-1/2 text-slate-500 hover:text-blue-400"
+                  aria-label="Open time picker"
+                  tabIndex={-1}
+                >
+                  <Clock size={14} />
+                </button>
+                {!form.startTime ? (
+                  <span className="pointer-events-none absolute left-9 top-1/2 -translate-y-1/2 text-xs text-slate-600">
+                    00:00 AM
+                  </span>
+                ) : null}
                 <input
+                  ref={startTimeInputRef}
                   type="time"
                   value={form.startTime}
                   onChange={(event) => updateField("startTime", event.target.value)}
-                  className={`${inputClass} pl-9 ${errors.startTime ? "border-rose-500/50" : "border-white/10"}`}
+                  style={{ ...nativePickerStyle, color: form.startTime ? undefined : "transparent" }}
+                  className={`${inputClass} pl-9 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 ${
+                    errors.startTime ? "border-rose-500/50" : "border-white/10"
+                  }`}
                 />
               </div>
             </Field>
 
             <Field label="End time" error={errors.endTime}>
               <div className="relative">
-                <Clock size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <button
+                  type="button"
+                  onClick={() => openPicker(endTimeInputRef)}
+                  className="absolute left-3 top-1/2 z-10 -translate-y-1/2 text-slate-500 hover:text-blue-400"
+                  aria-label="Open time picker"
+                  tabIndex={-1}
+                >
+                  <Clock size={14} />
+                </button>
+                {!form.endTime ? (
+                  <span className="pointer-events-none absolute left-9 top-1/2 -translate-y-1/2 text-xs text-slate-600">
+                    00:00 PM
+                  </span>
+                ) : null}
                 <input
+                  ref={endTimeInputRef}
                   type="time"
                   value={form.endTime}
                   onChange={(event) => updateField("endTime", event.target.value)}
-                  className={`${inputClass} pl-9 ${errors.endTime ? "border-rose-500/50" : "border-white/10"}`}
+                  style={{ ...nativePickerStyle, color: form.endTime ? undefined : "transparent" }}
+                  className={`${inputClass} pl-9 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 ${
+                    errors.endTime ? "border-rose-500/50" : "border-white/10"
+                  }`}
                 />
               </div>
             </Field>
@@ -228,26 +298,18 @@ export default function AddCandidateDrawer({ onClose, onCreated }) {
             </button>
             <span>
               <span className="block text-xs font-semibold text-white">Voucher available</span>
-              <span className="text-[11px] text-slate-400">Includes assist support at no cost.</span>
+              <span className="text-[11px] text-slate-400">Assist support is disabled when a voucher is available.</span>
             </span>
           </label>
 
-          {!form.voucher ? (
-            <Field label="Assist support cost" error={errors.assistCost}>
-              <div className="relative">
-                <IndianRupee size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.assistCost}
-                  onChange={(event) => updateField("assistCost", event.target.value)}
-                  placeholder="Enter cost"
-                  className={`${inputClass} pl-9 ${errors.assistCost ? "border-rose-500/50" : "border-white/10"}`}
-                />
-              </div>
-            </Field>
-          ) : null}
+          <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-3">
+            <span className="text-xs font-semibold text-white">Assist support</span>
+            <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${
+              form.voucher ? "bg-slate-500/15 text-slate-400" : "bg-emerald-500/15 text-emerald-300"
+            }`}>
+              {form.voucher ? "False" : "True"}
+            </span>
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 border-t border-white/10 p-5">

@@ -13,6 +13,7 @@ import {
   ManageUsersIcon,
   ShieldIcon,
   ExamIcon,
+  LeadIcon,
 } from "@/app/atoms/icons";
 import Heading from "@/app/atoms/heading";
 import Description from "@/app/atoms/description";
@@ -72,6 +73,11 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
       label: "Exam",
       href: "/exam",
       icon: ExamIcon,
+    },
+    hasModule(user, "leads") && {
+      label: "Lead Management",
+      href: "/leads",
+      icon: LeadIcon,
     },
   ].filter(Boolean);
 

@@ -13,8 +13,9 @@ import {
   Cpu,
   CreditCard,
   Download,
-  IndianRupee,
+  IdCard,
   Loader2,
+  MessageSquare,
   Phone,
   Search,
   TicketCheck,
@@ -53,6 +54,13 @@ function toInputTime(value) {
 
 function displayTime(value) {
   return String(value || "").replace(/\bAM\b/gi, "Am").replace(/\bPM\b/gi, "Pm");
+}
+
+function reminderLabel(exam) {
+  if (exam.reminderSentAt) {
+    return `SMS sent to ${exam.mobileNo}`;
+  }
+  return `Auto SMS to ${exam.mobileNo} 24 hours before exam`;
 }
 
 export default function ExamListSubmodule({
@@ -182,8 +190,10 @@ export default function ExamListSubmodule({
         "Exam Date": exam.examDate ? new Date(exam.examDate).toISOString().slice(0, 10) : "",
         "Exam Time": displayTime(exam.examTime),
         Mode: "ONLINE",
+        "Government ID": "Carry Aadhaar Card or PAN Card",
+        "SMS Reminder": exam.reminderSentAt ? "Sent" : "Auto 24 hours before exam",
         Voucher: exam.voucher ? "Yes" : "No",
-        "Assist Support Cost": Number(exam.assistCost) > 0 ? exam.assistCost : "",
+        "Assist Support": exam.assistSupport ? "Yes" : "No",
         "Payment Status": exam.paymentStatus || "PENDING",
         Status: exam.status || defaultStatus,
       })),
@@ -228,14 +238,15 @@ export default function ExamListSubmodule({
           </label>
 
           <label className="space-y-1.5">
-            <span className="text-[14px] xl:text-[16px] font-medium !text-[#cfcaca] font-inter block mb-1.5">Date</span>
-            <input
-              type="date"
-              value={filters.date}
-              onChange={(event) => updateFilter("date", event.target.value)}
-              className="bg-[#0f172a] w-full rounded-lg border border-white/10 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none transition cursor-pointer"
-            />
-          </label>
+  <span className="text-[14px] xl:text-[16px] font-medium !text-[#cfcaca] font-inter block mb-1.5">Date</span>
+  <input
+    type="date"
+    value={filters.date}
+    onChange={(event) => updateFilter("date", event.target.value)}
+    style={{ colorScheme: "dark" }}
+    className="bg-[#0f172a] w-full rounded-lg border border-white/10 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none transition cursor-pointer"
+  />
+</label>
 
           <label className="space-y-1.5">
             <span className="text-[14px] xl:text-[16px] font-medium !text-[#cfcaca] font-inter block mb-1.5">Time</span>
@@ -327,31 +338,34 @@ export default function ExamListSubmodule({
                 </div>
 
                 <div className="relative mb-3 flex items-center gap-2">
-                  <Award size={14} className="shrink-0 text-amber-400" />
+                  <Award size={16} className="shrink-0 text-amber-400" />
                   <p className="text-[12px] xl:text-[16px] font-semibold text-white">{exam.examName}</p>
                 </div>
 
                 <div className="relative mb-3 grid gap-2 text-[12px] xl:text-[14px] sm:grid-cols-2">
                   <div className="flex items-center gap-1.5 text-slate-300">
-                    <Phone size={14} className="text-slate-500" />
-                    {exam.mobileNo}
+                    <Phone size={14} className="text-cyan-400" />
+                    <span className="font-semibold text-white">{exam.mobileNo}</span>
                   </div>
-                  {exam.voucher ? (
-                    <div className="flex items-center gap-1.5 text-slate-300">
-                      <>
-                        <TicketCheck size={13} className="text-emerald-400" />
-                        <span className="text-emerald-300">Voucher + Assist Included</span>
-                      </>
-                    </div>
-                  ) : Number(exam.assistCost) > 0 ? (
-                    <div className="flex items-center gap-1.5 text-slate-300">
-                      <>
-                        <IndianRupee size={14} className="text-amber-400" />
-                        <span>Assist Support Cost: ₹{Number(exam.assistCost).toLocaleString()}</span>
-                      </>
-                    </div>
-                  ) : null}
+                  <div className="flex items-center gap-1.5 text-slate-300">
+                    <TicketCheck size={13} className={exam.voucher ? "text-emerald-400" : "text-slate-500"} />
+                    <span>{exam.voucher ? "Voucher + Assist Support cost Included" : "Assist Support Cost"}</span>
+                  </div>
+                  <div className="flex items-start gap-1.5 text-slate-300">
+                    <IdCard size={14} className="mt-0.5 shrink-0 text-amber-400" />
+                    <span>Carry Aadhaar Card or PAN Card</span>
+                  </div>
+                
                 </div>
+
+                {/* <div className={`relative mb-3 flex items-start gap-1.5 rounded-lg border px-2.5 py-2 text-[11px] xl:text-[12px] ${
+                  exam.reminderSentAt
+                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                    : "border-cyan-500/20 bg-cyan-500/10 text-cyan-200"
+                }`}>
+                  <MessageSquare size={14} className="mt-0.5 shrink-0" />
+                  <span>{reminderLabel(exam)}</span>
+                </div> */}
 
                 <div className="relative flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
                   <div className="flex items-center gap-1.5 text-slate-400">

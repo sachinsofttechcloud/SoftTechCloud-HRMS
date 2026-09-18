@@ -1,4 +1,4 @@
-import HeroSection from "./component/hero";
+import DashboardOverview from "./component/dashboard";
 
 export const metadata = {
   title: "Employee Dashboard | SoftTechCloud HRMS",
@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function Homepage() {
-  return <HeroSection />;
+  return <DashboardOverview />;
 }
