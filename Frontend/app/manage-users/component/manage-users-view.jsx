@@ -75,7 +75,7 @@ export default function ManageUsersView() {
           localStorage.setItem("authUser", JSON.stringify(res.user));
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -208,37 +208,35 @@ export default function ManageUsersView() {
       </div> */}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex flex-wrap items-center gap-2">
-  {[
-    { id: "ALL", label: "All", count: summary.total },
-    { id: "ACTIVE", label: "Active", count: summary.active },
-    { id: "INACTIVE", label: "Inactive", count: summary.inactive },
-  ].map((tab) => (
-    <button
-      key={tab.id}
-      type="button"
-      onClick={() => setStatusFilter(tab.id)}
-      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition ${
-        statusFilter === tab.id
-          ? "bg-blue-600/20 text-blue-300 border border-blue-500/30"
-          : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
-      }`}
-    >
-      <span>{tab.label}</span>
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            { id: "ALL", label: "All", count: summary.total },
+            { id: "ACTIVE", label: "Active", count: summary.active },
+            { id: "INACTIVE", label: "Inactive", count: summary.inactive },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setStatusFilter(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition ${statusFilter === tab.id
+                  ? "bg-blue-600/20 text-blue-300 border border-blue-500/30"
+                  : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
+                }`}
+            >
+              <span>{tab.label}</span>
 
-      {/* Count Circle */}
-      <span
-        className={`flex items-center justify-center w-6 h-6 rounded-full text-[12px] font-bold ${
-          statusFilter === tab.id
-            ? "bg-blue-600 text-white"
-            : "bg-slate-700 text-slate-200"
-        }`}
-      >
-        {tab.count}
-      </span>
-    </button>
-  ))}
-</div>
+              {/* Count Circle */}
+              <span
+                className={`flex items-center justify-center w-6 h-6 rounded-full text-[12px] font-bold ${statusFilter === tab.id
+                    ? "bg-blue-600 text-white"
+                    : "bg-slate-700 text-slate-200"
+                  }`}
+              >
+                {tab.count}
+              </span>
+            </button>
+          ))}
+        </div>
         <AddUserFlow onCreated={() => loadUsers(statusFilter, search)} />
       </div>
 
@@ -330,18 +328,17 @@ export default function ManageUsersView() {
                             ? "You cannot deactivate your own account"
                             : `Change status to ${user.isActive ? "Inactive" : "Active"}`
                         }
-                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold border ${
-                          user.isActive
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold border ${user.isActive
                             ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
                             : "bg-rose-500/15 border-rose-500/30 text-rose-300"
-                        } disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-125 transition`}
+                          } disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-125 transition`}
                       >
                         {user.isActive ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
                         {statusUpdatingId === user.id
                           ? "Updating..."
                           : user.isActive
-                          ? "Active"
-                          : "Inactive"}
+                            ? "Active"
+                            : "Inactive"}
                       </button>
                     </td>
                     <td className="py-3 px-4 text-slate-200">
@@ -387,7 +384,7 @@ export default function ManageUsersView() {
             </button>
 
             <span className="min-w-20 text-center rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-semibold text-white">
-              Page {currentPage} 
+              Page {currentPage}
             </span>
 
             <button

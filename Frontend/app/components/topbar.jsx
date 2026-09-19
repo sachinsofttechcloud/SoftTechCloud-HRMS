@@ -14,9 +14,9 @@ import { apiLogout } from "@/app/lib/api";
 import Button from "../atoms/button";
 
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Bell, CheckCheck, X } from "lucide-react";
-import { apiGetNotifications, apiMarkAllNotificationsRead } from "@/app/lib/api";
+import { apiGetNotifications, apiMarkAllNotificationsRead, apiMarkNotificationRead } from "@/app/lib/api";
 
 function notificationTypeMeta(type) {
   if (type === "WORK_ANNIVERSARY") {
@@ -47,6 +47,18 @@ export default function Topbar({ user, onMenuClick }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const notifContainerRef = useRef(null);
+
+  // Close notification menu on outside click
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (notifContainerRef.current && !notifContainerRef.current.contains(event.target)) {
+        setShowNotifMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Resolve page title based on current route
   const getPageTitle = () => {
@@ -85,6 +97,19 @@ export default function Topbar({ user, onMenuClick }) {
       setNotifications(notifications.map((n) => ({ ...n, isRead: true })));
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleMarkItemRead = async (notif) => {
+    if (notif.isRead) return;
+    try {
+      await apiMarkNotificationRead(notif.id);
+      setNotifications((prev) =>
+        prev.map((item) => (item.id === notif.id ? { ...item, isRead: true } : item))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    } catch (e) {
+      console.error("Failed to mark notification read:", e);
     }
   };
 
@@ -133,8 +158,8 @@ export default function Topbar({ user, onMenuClick }) {
           <span>Webmail Inbox</span>
         </Button>
 
-        {/* Notifications Dropdown */}
-        <div className="relative">
+        {/* Notifications Dropdown Container */}
+        <div className="relative" ref={notifContainerRef}>
           <button
             type="button"
             onClick={() => {
@@ -148,7 +173,7 @@ export default function Topbar({ user, onMenuClick }) {
             <Bell size={18} />
             {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center animate-bounce shadow-lg">
-                {unreadCount > 9 ? "9+" : unreadCount}
+                {unreadCount}
               </span>
             )}
           </button>
@@ -157,7 +182,7 @@ export default function Topbar({ user, onMenuClick }) {
             <div className="absolute right-0 mt-3 w-80 sm:w-96 rounded-2xl border border-white/10 bg-[#0f172a] shadow-2xl p-4 space-y-3 z-50 animate-fadeIn font-inter">
               <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
                 <span className="text-xs font-bold text-white flex items-center gap-2">
-                  <Bell size={14} className="text-blue-400" /> Notifications ({unreadCount} new)
+                  <Bell size={14} className="text-blue-400" /> Notifications ({unreadCount} unread)
                 </span>
                 <div className="flex items-center gap-2">
                   {unreadCount > 0 && (
@@ -168,7 +193,7 @@ export default function Topbar({ user, onMenuClick }) {
                       <CheckCheck size={12} /> Mark Read
                     </button>
                   )}
-                  <button onClick={() => setShowNotifMenu(false)} className="text-slate-400 hover:text-white p-1">
+                  <button onClick={() => setShowNotifMenu(false)} className="text-slate-400 hover:text-white p-1 cursor-pointer">
                     <X size={14} />
                   </button>
                 </div>
@@ -183,8 +208,12 @@ export default function Topbar({ user, onMenuClick }) {
                     return (
                       <div
                         key={n.id}
-                        className={`p-2.5 rounded-xl text-xs space-y-1 transition ${!n.isRead ? "bg-blue-600/10 border border-blue-500/20" : "bg-black/20"
-                          }`}
+                        onClick={() => handleMarkItemRead(n)}
+                        className={`p-2.5 rounded-xl text-xs space-y-1 transition cursor-pointer ${
+                          !n.isRead
+                            ? "bg-blue-600/15 border border-blue-500/30 hover:bg-blue-600/25"
+                            : "bg-black/20 hover:bg-white/5 opacity-80"
+                        }`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <span className="font-semibold text-white block">{n.title}</span>
