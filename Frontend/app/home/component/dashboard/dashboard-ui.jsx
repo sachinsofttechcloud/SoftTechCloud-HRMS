@@ -31,6 +31,12 @@ export default function DashboardUI() {
 
     const [rescheduleTarget, setRescheduleTarget] = useState(null);
 
+    const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(user?.role);
+    const userModules = user?.allowedModules || data?.allowedModules || [];
+
+    // Leads sections are accessible by Admin/SuperAdmin or employees with 'leads' module permission
+    const hasLeadAccess = isAdmin || userModules.includes("leads");
+
     const navigateTo = (url) => router.push(url);
 
     const handleCancelExam = async (examId) => {
@@ -52,64 +58,72 @@ export default function DashboardUI() {
                 </div>
             ) : null}
 
-            {/* Main KPI Stat Cards */}
-            <StatCardsGrid
-                stats={stats}
-                loading={loading}
-                onNavigate={navigateTo}
-            />
+            {/* Leads & Operations Section: Visible to Admin / Super Admin OR employees with granted Lead Management access */}
+            {hasLeadAccess && (
+                <div id="leads-sections" className="w-full space-y-6 font-inter">
+                    {/* Main KPI Stat Cards */}
+                    <StatCardsGrid
+                        stats={stats}
+                        loading={loading}
+                        onNavigate={navigateTo}
+                    />
 
-            {/* Performance Chart */}
-            <PerformanceChart monthlyGraph={data?.monthlyGraph} loading={loading} />
+                    {/* Performance Chart */}
+                    <PerformanceChart monthlyGraph={data?.monthlyGraph} loading={loading} />
 
-            {/* Leads Section */}
-            <div className="flex flex-col md:flex-row gap-5 w-full">
-                <LeadAnalyticsDonut leads={data?.newLeads || []} />
-                <RecentLeadsDeals
-                    leads={data?.newLeads || []}
-                    deals={data?.recentDeals || data?.paymentActions || []}
-                    onNavigate={navigateTo}
+                    {/* Leads Section */}
+                    <div className="flex flex-col md:flex-row gap-5 w-full">
+                        <LeadAnalyticsDonut leads={data?.newLeads || []} />
+                        <RecentLeadsDeals
+                            leads={data?.newLeads || []}
+                            deals={data?.recentDeals || data?.paymentActions || []}
+                            onNavigate={navigateTo}
+                        />
+                    </div>
+
+                    {/* Upcoming Exams Table */}
+                    <UpcomingExamsTable
+                        exams={data?.upcomingExams || []}
+                        actionLoading={actionLoading}
+                        onNavigate={navigateTo}
+                        onReschedule={setRescheduleTarget}
+                        onCancel={handleCancelExam}
+                    />
+
+                    {/* Recent Activity Stream */}
+                    <RecentActivityStream leads={data?.newLeads || []} followUps={data?.followUps || []} />
+                </div>
+            )}
+
+            {/* Attendance & HRMS Section: Visible to ALL employees by default */}
+            <div id="Attendance-and-hrms-sections" className="w-full space-y-6 font-inter">
+                {/* Attendance & Leave Overview Cards */}
+                <AttendanceLeaveOverviewSection
+                    user={user}
+                    attendanceOverview={data?.attendanceOverview}
                 />
+
+                {/* Attendance Analytics & Recent Leaves / Approvals */}
+                <AttendanceAnalyticsLeavesSection
+                    recentLeaves={data?.recentLeaves || []}
+                />
+
+                {/* Last 4-6 Months Salary Sheet with PDF Download */}
+                <SalarySheetSection
+                    user={user}
+                    salarySlips={data?.salarySlips || []}
+                />
+
+                {/* Exam Reschedule Modal */}
+                {rescheduleTarget ? (
+                    <RescheduleExamModal
+                        exam={rescheduleTarget}
+                        loading={actionLoading}
+                        onClose={() => setRescheduleTarget(null)}
+                        onSubmit={handleReschedule}
+                    />
+                ) : null}
             </div>
-
-            {/* Upcoming Exams Table */}
-            <UpcomingExamsTable
-                exams={data?.upcomingExams || []}
-                actionLoading={actionLoading}
-                onNavigate={navigateTo}
-                onReschedule={setRescheduleTarget}
-                onCancel={handleCancelExam}
-            />
-
-            {/* Recent Activity Stream */}
-            <RecentActivityStream leads={data?.newLeads || []} followUps={data?.followUps || []} />
-
-            {/* Attendance & Leave Overview Cards */}
-            <AttendanceLeaveOverviewSection
-                user={user}
-                attendanceOverview={data?.attendanceOverview}
-            />
-
-            {/* Attendance Analytics & Recent Leaves / Approvals */}
-            <AttendanceAnalyticsLeavesSection
-                recentLeaves={data?.recentLeaves || []}
-            />
-
-            {/* Last 4-6 Months Salary Sheet with PDF Download */}
-            <SalarySheetSection
-                user={user}
-                salarySlips={data?.salarySlips || []}
-            />
-
-            {/* Exam Reschedule Modal */}
-            {rescheduleTarget ? (
-                <RescheduleExamModal
-                    exam={rescheduleTarget}
-                    loading={actionLoading}
-                    onClose={() => setRescheduleTarget(null)}
-                    onSubmit={handleReschedule}
-                />
-            ) : null}
         </div>
     );
 }

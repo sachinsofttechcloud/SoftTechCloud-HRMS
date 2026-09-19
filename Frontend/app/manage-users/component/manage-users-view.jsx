@@ -23,6 +23,7 @@ import {
   apiGetUserModuleAccess,
   apiToggleEmployeeStatus,
   apiUpdateUserModuleAccess,
+  saveAuthUserToStorage,
 } from "@/app/lib/api";
 
 function canManageAccess(role) {
@@ -72,7 +73,7 @@ export default function ManageUsersView() {
       .then((res) => {
         if (res?.user) {
           setCurrentUser(res.user);
-          localStorage.setItem("authUser", JSON.stringify(res.user));
+          saveAuthUserToStorage(res.user);
         }
       })
       .catch(() => { });

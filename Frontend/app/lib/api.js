@@ -63,6 +63,51 @@ async function fetcher(endpoint, options = {}) {
 }
 
 /**
+ * Sanitizes user object before saving to localStorage by removing heavy base64 strings
+ * (such as avatar base64 data, passport photos, and document strings) that exceed the ~5MB quota limit.
+ */
+export function sanitizeUserForStorage(user) {
+  if (!user || typeof user !== "object") return user;
+  const clean = { ...user };
+  for (const key of Object.keys(clean)) {
+    const val = clean[key];
+    if (typeof val === "string") {
+      // Omit base64 data URIs or strings exceeding 500 characters
+      if (val.startsWith("data:") || val.length > 500) {
+        delete clean[key];
+      }
+    }
+  }
+  return clean;
+}
+
+/**
+ * Safely saves authUser to localStorage with error handling for QuotaExceededError
+ */
+export function saveAuthUserToStorage(user) {
+  if (typeof window === "undefined" || !user) return;
+  try {
+    const cleanUser = sanitizeUserForStorage(user);
+    localStorage.setItem("authUser", JSON.stringify(cleanUser));
+  } catch (err) {
+    console.warn("localStorage quota exceeded while saving authUser:", err);
+    try {
+      const minimalUser = {
+        id: user.id || user._id,
+        name: user.name || user.full_name,
+        email: user.email,
+        role: user.role,
+        department: user.department,
+        allowedModules: user.allowedModules,
+      };
+      localStorage.setItem("authUser", JSON.stringify(minimalUser));
+    } catch (fallbackErr) {
+      console.error("Failed fallback save authUser to localStorage:", fallbackErr);
+    }
+  }
+}
+
+/**
  * POST /api/auth/login
  */
 export async function apiLogin({ email, password }) {
@@ -74,7 +119,7 @@ export async function apiLogin({ email, password }) {
   if (data.accessToken && typeof window !== "undefined") {
     localStorage.setItem("accessToken", data.accessToken);
     localStorage.setItem("refreshToken", data.refreshToken);
-    localStorage.setItem("authUser", JSON.stringify(data.user));
+    saveAuthUserToStorage(data.user);
     // Set cookie for potential middleware use
     document.cookie = `accessToken=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
   }
@@ -137,7 +182,7 @@ export async function apiUpdateProfile({ phone, address }) {
   });
 
   if (data.user && typeof window !== "undefined") {
-    localStorage.setItem("authUser", JSON.stringify(data.user));
+    saveAuthUserToStorage(data.user);
   }
 
   return data;

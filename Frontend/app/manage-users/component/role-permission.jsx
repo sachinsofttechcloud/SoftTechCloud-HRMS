@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Shield, Users } from "lucide-react";
 import Heading from "@/app/atoms/heading";
 import Description from "@/app/atoms/description";
-import { apiGetMe, apiGetRolePermissionOverview } from "@/app/lib/api";
+import { apiGetMe, apiGetRolePermissionOverview, saveAuthUserToStorage } from "@/app/lib/api";
 
 function canManageAccess(role) {
   return ["ADMIN", "SUPER_ADMIN"].includes(role);
@@ -23,7 +23,7 @@ export default function RolePermissionView() {
       .then((res) => {
         if (res?.user) {
           setCurrentUser(res.user);
-          localStorage.setItem("authUser", JSON.stringify(res.user));
+          saveAuthUserToStorage(res.user);
         }
       })
       .catch(() => {});

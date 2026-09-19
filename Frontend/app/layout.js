@@ -15,6 +15,11 @@ const merri = Merriweather({
 export const metadata = {
   title: "SoftTechCloud HRMS Portal",
   description: "Enterprise Human Resource Management System",
+  icons: {
+    icon: "/login/Logo-2.png",
+    shortcut: "/login/Logo-2.png",
+    apple: "/login/Logo-2.png",
+  },
 };
 
 export default function RootLayout({ children }) {

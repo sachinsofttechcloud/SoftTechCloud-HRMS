@@ -29,7 +29,8 @@ import {
 import Heading from "@/app/atoms/heading";
 import Description from "@/app/atoms/description";
 import InputField from "@/app/molecules/input-filed";
-import { apiLogout, apiGetMe, apiUpdateProfile } from "@/app/lib/api";
+import { apiLogout, apiGetMe, apiUpdateProfile, saveAuthUserToStorage } from "@/app/lib/api";
+import { getMediaUrl } from "@/app/lib/utils";
 
 function anniversaryLabel(joiningDate) {
     const ymd = String(joiningDate || "").slice(0, 10);
@@ -72,7 +73,7 @@ export default function ProfileStatus() {
             .then((res) => {
                 if (res?.user) {
                     setUser(res.user);
-                    localStorage.setItem("authUser", JSON.stringify(res.user));
+                    saveAuthUserToStorage(res.user);
                 }
             })
             .catch((err) => {
@@ -182,7 +183,7 @@ export default function ProfileStatus() {
                     <div className="relative mb-4">
                         {user?.passportPhoto || user?.avatar ? (
                             <img
-                                src={user.passportPhoto || user.avatar}
+                                src={getMediaUrl(user.passportPhoto || user.avatar)}
                                 alt={user?.name || "Employee"}
                                 className="h-28 w-28 rounded-2xl object-cover border-2 border-blue-400/40 shadow-xl"
                             />
@@ -498,7 +499,7 @@ export default function ProfileStatus() {
                                     <span className="text-slate-400 block mb-1">Degree / Passing Certificate</span>
                                     {user.education.certificate ? (
                                         <a
-                                            href={user.education.certificate}
+                                            href={getMediaUrl(user.education.certificate)}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="text-[10px] xl:text-[12px] font-semibold text-blue-300 hover:underline"

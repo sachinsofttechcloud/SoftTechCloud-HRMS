@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { apiGetAllAttendanceAdmin, apiAdminUpdateAttendance, apiImportAttendance } from "@/app/lib/api";
 import { downloadExcel, parseAttendanceExcel } from "@/app/lib/excel";
+import { getMediaUrl } from "@/app/lib/utils";
 
 function todayYmd() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(new Date());
@@ -376,7 +377,7 @@ export default function AdminAttendanceView({ user }) {
                         <div className="flex items-center gap-3">
                           <div className="h-9 w-9 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center font-bold text-white text-xs shrink-0 overflow-hidden">
                             {emp.passportPhoto || emp.avatar ? (
-                              <img src={emp.passportPhoto || emp.avatar} alt={emp.name} className="h-full w-full object-cover" />
+                              <img src={getMediaUrl(emp.passportPhoto || emp.avatar)} alt={emp.name} className="h-full w-full object-cover" />
                             ) : (
                               emp.name.charAt(0).toUpperCase()
                             )}

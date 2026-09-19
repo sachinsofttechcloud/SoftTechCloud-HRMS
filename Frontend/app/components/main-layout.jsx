@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "./sidebar";
 import Topbar from "./topbar";
-import { apiGetMe } from "@/app/lib/api";
+import { apiGetMe, saveAuthUserToStorage } from "@/app/lib/api";
 
 // Routes that do NOT show Topbar and Sidebar (Auth & Public pages)
 const AUTH_ROUTES = ["/", "/login-in", "/forgot-password", "/reset-password"];
@@ -36,7 +36,7 @@ export default function MainLayout({ children }) {
       .then((res) => {
         if (res?.user) {
           setUser(res.user);
-          localStorage.setItem("authUser", JSON.stringify(res.user));
+          saveAuthUserToStorage(res.user);
         }
       })
       .catch((err) => {

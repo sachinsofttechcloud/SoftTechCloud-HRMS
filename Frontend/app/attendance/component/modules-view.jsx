@@ -12,7 +12,7 @@ import {
 import AttendanceTimeSubmodule from "./attendance-time-submodule";
 import { LeaveManagementSubmodule } from "./other-submodules";
 import CompensationSubmodule from "./compensation-submodule";
-import { apiGetMe } from "@/app/lib/api";
+import { apiGetMe, saveAuthUserToStorage } from "@/app/lib/api";
 import CalendarSubmodule from "./calendarSubmodule";
 import { HrDocumentSubmodule } from "./hrdocument-submodule";
 import { PayrollManagementSubmodule } from "./payroll-managementsubmodule";
@@ -53,7 +53,7 @@ export default function ModulesView() {
       .then((res) => {
         if (res?.user) {
           setUser(res.user);
-          localStorage.setItem("authUser", JSON.stringify(res.user));
+          saveAuthUserToStorage(res.user);
         }
       })
       .catch((err) => console.warn(err));

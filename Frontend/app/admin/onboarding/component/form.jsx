@@ -41,6 +41,7 @@ import Description from "@/app/atoms/description";
 import InputField from "@/app/molecules/input-filed";
 import { onboardingSchema } from "@/app/lib/validation";
 import { apiOnboardEmployee, apiGetNextEmployeeId } from "@/app/lib/api";
+import { getMediaUrl } from "@/app/lib/utils";
 import ShowPop from "./show-pop";
 
 export default function OnboardingForm() {
@@ -100,10 +101,15 @@ export default function OnboardingForm() {
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      setApiError("Photo image file size should be less than 5MB");
+      setError("passportPhoto", {
+        type: "manual",
+        message: "Passport photo image size must not exceed 5MB",
+      });
+      setApiError("Passport photo image size must not exceed 5MB. Please choose a file below 5MB.");
       return;
     }
 
+    setApiError("");
     const reader = new FileReader();
     reader.onload = (event) => {
       const base64 = event.target.result;
@@ -116,11 +122,7 @@ export default function OnboardingForm() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 8 * 1024 * 1024) {
-      setApiError("Certificate file size should be less than 8MB");
-      return;
-    }
-
+    setApiError("");
     const reader = new FileReader();
     reader.onload = (event) => {
       setValue("certificate", event.target.result, { shouldValidate: true });
@@ -592,7 +594,7 @@ export default function OnboardingForm() {
               {passportPhotoValue && (
                 <div className="mt-3 flex items-center gap-3 p-2.5 rounded-xl bg-black/40 border border-white/10">
                   <img
-                    src={passportPhotoValue}
+                    src={getMediaUrl(passportPhotoValue)}
                     alt="Passport Preview"
                     className="h-12 w-12 rounded-lg object-cover border border-blue-500/40 shadow"
                     onError={(e) => {

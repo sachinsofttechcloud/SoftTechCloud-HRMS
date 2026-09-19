@@ -15,8 +15,9 @@ import Button from "../atoms/button";
 
 
 import { useState, useEffect, useRef } from "react";
-import { Bell, CheckCheck, X } from "lucide-react";
+import { Bell, CheckCheck, X, User } from "lucide-react";
 import { apiGetNotifications, apiMarkAllNotificationsRead, apiMarkNotificationRead } from "@/app/lib/api";
+import { getMediaUrl } from "@/app/lib/utils";
 
 function notificationTypeMeta(type) {
   if (type === "WORK_ANNIVERSARY") {
@@ -44,9 +45,12 @@ export default function Topbar({ user, onMenuClick }) {
   const pathname = usePathname();
   const router = useRouter();
 
+  const userAvatarUrl = getMediaUrl(user?.passportPhoto || user?.avatar);
+
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
   const notifContainerRef = useRef(null);
 
   // Close notification menu on outside click
@@ -209,11 +213,10 @@ export default function Topbar({ user, onMenuClick }) {
                       <div
                         key={n.id}
                         onClick={() => handleMarkItemRead(n)}
-                        className={`p-2.5 rounded-xl text-xs space-y-1 transition cursor-pointer ${
-                          !n.isRead
-                            ? "bg-blue-600/15 border border-blue-500/30 hover:bg-blue-600/25"
-                            : "bg-black/20 hover:bg-white/5 opacity-80"
-                        }`}
+                        className={`p-2.5 rounded-xl text-xs space-y-1 transition cursor-pointer ${!n.isRead
+                          ? "bg-blue-600/15 border border-blue-500/30 hover:bg-blue-600/25"
+                          : "bg-black/20 hover:bg-white/5 opacity-80"
+                          }`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <span className="font-semibold text-white block">{n.title}</span>
@@ -238,11 +241,24 @@ export default function Topbar({ user, onMenuClick }) {
 
         {/* User Avatar & Logout */}
         <div className="flex items-center gap-3 pl-3 border-l border-white/10">
+
           <div
-            className="h-9 w-9 rounded-xl !bg-blue-600/20 hover:!bg-blue-600/30 flex items-center justify-center font-bold shadow-md text-[12px] xl:text-[14px] cursor-pointer text-white"
+            className="h-9 w-9 rounded-xl overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 flex items-center justify-center font-bold shadow-md text-[13px] cursor-pointer text-white border border-white/20 transition shrink-0"
             onClick={handClickProfile}
+            title={user?.name || "Profile"}
           >
-            {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+            {userAvatarUrl && !avatarError ? (
+              <img
+                src={userAvatarUrl}
+                alt={user?.name || "user-profile"}
+                className="h-full w-full rounded-xl object-cover"
+                onError={() => setAvatarError(true)}
+              />
+            ) : (
+              <span className="font-semibold text-white font-inter">
+                {(user?.name || "U").charAt(0).toUpperCase()}
+              </span>
+            )}
           </div>
 
           <button
