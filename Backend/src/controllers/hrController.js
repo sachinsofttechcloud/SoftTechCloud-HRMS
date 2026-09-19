@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma.js";
 import { sendOnboardingWelcomeEmail } from "../lib/mailer.js";
 import { joiningDateFromYmd, notifyEmployeeMilestones, saveUserBirthDate } from "../lib/employeeMilestones.js";
 import { grantDefaultModuleAccess } from "../lib/moduleAccess.js";
+import { saveBase64Media } from "../lib/fileStorage.js";
 import {
   autoConfirmCompletedProbations,
   buildDocumentDownloadText,
@@ -168,9 +169,16 @@ export const onboardEmployee = async (req, res) => {
       return res.status(409).json({ error: allocError.message || "Employee ID is already assigned." });
     }
 
-    // 3. Resolve Password
+    // 3. Resolve Password & Process High-Quality Media Files
     const initialPassword = password && password.trim().length >= 8 ? password.trim() : generateTempPassword();
     const hashedPassword = await bcrypt.hash(initialPassword, 10);
+
+    // Convert base64 uploaded files to high quality disk files and store short URL paths
+    const rawPhoto = (passportPhoto || avatar || "").trim();
+    const savedPhotoUrl = rawPhoto ? saveBase64Media(rawPhoto, "photos", `passport_${normalizedEmployeeId}`) : null;
+
+    const rawCert = (certificate || "").trim();
+    const savedCertUrl = rawCert ? saveBase64Media(rawCert, "certificates", `cert_${normalizedEmployeeId}`) : null;
 
     // 4. Create Employee Record in DB
     const newEmployee = await prisma.user.create({
@@ -186,10 +194,10 @@ export const onboardEmployee = async (req, res) => {
         bloodGroup: bloodGroup?.trim() || null,
         aadharCard: aadharCard?.trim() || null,
         panCard: panCard?.trim() || null,
-        passportPhoto: passportPhoto?.trim() || avatar?.trim() || null,
+        passportPhoto: savedPhotoUrl,
         reportingManager: reportingManager?.trim() || null,
         address: address?.trim() || null,
-        avatar: avatar?.trim() || passportPhoto?.trim() || null,
+        avatar: savedPhotoUrl,
         joiningDate: parsedJoiningDate,
         isActive: Boolean(isActive),
         education: {
@@ -197,7 +205,7 @@ export const onboardEmployee = async (req, res) => {
             degree: degree.trim(),
             instituteName: instituteName.trim(),
             passingYear: String(passingYear).trim(),
-            certificate: certificate?.trim() || null,
+            certificate: savedCertUrl,
           },
         },
         bankDetail: {
