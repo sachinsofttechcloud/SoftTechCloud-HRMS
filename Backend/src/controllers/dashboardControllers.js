@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { prisma } from "../lib/prisma.js";
+import { getEffectiveModuleKeys } from "../lib/moduleAccess.js";
 
 const LEAD_INCLUDE = {
   assignedEmployee: { select: { id: true, name: true, employeeId: true } },
@@ -457,7 +458,71 @@ export async function getDashboard(req, res) {
       });
     }
 
+
+
+    // Query attendance, leaves, and salary slips for dashboard overview
+    const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata" }).format(now);
+    const currMonthStr = todayStr.slice(0, 7);
+    const userId = req.user?.id;
+
+    const allowedModules = await getEffectiveModuleKeys(req.user);
+
+    const [
+      todayAttendanceRows,
+      userMonthAttendances,
+      recentLeaveRequests,
+      userMonthLeaves,
+      userSalarySlips,
+    ] = await Promise.all([
+      prisma.attendance.findMany({
+        where: { date: todayStr },
+        select: { status: true, userId: true },
+      }),
+      userId ? prisma.attendance.findMany({
+        where: { userId, date: { startsWith: currMonthStr } },
+      }) : Promise.resolve([]),
+      prisma.leaveRequest.findMany({
+        take: 10,
+        orderBy: { createdAt: "desc" },
+        include: { user: { select: { id: true, name: true, employeeId: true, department: true } } },
+      }),
+      userId ? prisma.leaveRequest.findMany({
+        where: { userId, startDate: { startsWith: currMonthStr } },
+      }) : Promise.resolve([]),
+      userId ? prisma.salarySlip.findMany({
+        where: { userId },
+        orderBy: { month: "desc" },
+        take: 6,
+      }) : Promise.resolve([]),
+    ]);
+
+    const presentTodayCount = todayAttendanceRows.filter((r) =>
+      ["PRESENT", "HALF_DAY", "WFH", "ON_FIELD"].includes(r.status)
+    ).length;
+    const absentTodayCount = Math.max(0, employees.length - presentTodayCount);
+
+    // Calculate logged in employee month stats
+    let userPresentDays = 0;
+    let userLeaveDays = 0;
+    let userPaidLeaves = 0;
+    let userUnpaidLeaves = 0;
+
+    userMonthAttendances.forEach((a) => {
+      if (["PRESENT", "WFH", "ON_FIELD"].includes(a.status)) userPresentDays += 1;
+      else if (a.status === "HALF_DAY") userPresentDays += 0.5;
+      else if (a.status === "LEAVE") userLeaveDays += 1;
+    });
+
+    userMonthLeaves.forEach((l) => {
+      if (l.status === "APPROVED") {
+        userPaidLeaves += l.totalDays || 1;
+      } else {
+        userUnpaidLeaves += l.totalDays || 0;
+      }
+    });
+
     res.json({
+      allowedModules,
       summaryStats: {
         lead: {
           total: allLeadsCount,
@@ -481,6 +546,10 @@ export async function getDashboard(req, res) {
           voucherIncluded: voucherNeedCount,
           assistIncluded: assistSupportCount,
         },
+        payment: {
+          total: paymentLeads.length,
+          pending: paymentLeads.filter((p) => p.paymentAction?.verificationStatus === "PENDING").length,
+        },
       },
       monthlyGraph,
       newLeads: newLeads.map(newLeadDto),
@@ -498,6 +567,39 @@ export async function getDashboard(req, res) {
         supportSetupCost: Number(revenue?.supportSetupCost || 0),
       },
       employees,
+      attendanceOverview: {
+        presentToday: presentTodayCount,
+        absentToday: absentTodayCount,
+        totalEmployees: employees.length,
+        userPresentDays,
+        userLeaveDays,
+        userPaidLeaves,
+        userUnpaidLeaves,
+      },
+      recentLeaves: recentLeaveRequests.map((l) => ({
+        id: l.id,
+        employeeName: l.user?.name || "Employee",
+        department: l.user?.department || "General",
+        leaveType: l.leaveType,
+        startDate: l.startDate,
+        endDate: l.endDate,
+        totalDays: l.totalDays,
+        reason: l.reason,
+        status: l.status,
+        createdAt: l.createdAt,
+      })),
+      salarySlips: userSalarySlips.map((s) => ({
+        id: s.id,
+        month: s.month,
+        monthLabel: s.monthLabel,
+        year: s.year,
+        grossPay: s.grossPay,
+        pfDeduction: s.pfDeduction,
+        governmentTax: s.governmentTax,
+        netPay: s.netPay,
+        status: s.status,
+        fileUrl: s.fileUrl,
+      })),
     });
   } catch (error) {
     console.error(error);

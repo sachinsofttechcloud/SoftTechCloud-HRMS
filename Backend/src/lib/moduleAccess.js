@@ -11,7 +11,7 @@ export const APP_MODULE_CATALOG = [
     label: "Dashboard",
     description: "Home dashboard and workspace overview",
     route: "/home",
-    groupName: "Main",
+    groupName: "Dashboard",
     sortOrder: 10,
   },
   {

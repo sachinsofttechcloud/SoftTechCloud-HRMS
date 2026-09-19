@@ -119,7 +119,7 @@ async function runEmployeeMilestones() {
     await prisma.notification.create({
       data: {
         userId: emp.id,
-        targetRoles: ["HR", "ADMIN", "SUPER_ADMIN"],
+        targetRoles: ["EMPLOYEE", "MANAGER", "HR", "ADMIN", "SUPER_ADMIN"],
         title: "Employee Birthday Today",
         message: `${emp.name}'s birthday is today (${formatDisplayDate(birthYmd)}).`,
         type: "EMPLOYEE_BIRTHDAY",
@@ -144,7 +144,7 @@ async function runEmployeeMilestones() {
     await prisma.notification.create({
       data: {
         userId: emp.id,
-        targetRoles: ["HR", "ADMIN", "SUPER_ADMIN"],
+        targetRoles: ["EMPLOYEE", "MANAGER", "HR", "ADMIN", "SUPER_ADMIN"],
         title: "Work Anniversary",
         message: `${emp.name} — joining date ${formatDisplayDate(joinYmd)}. ${yearLabel}.`,
         type: "WORK_ANNIVERSARY",

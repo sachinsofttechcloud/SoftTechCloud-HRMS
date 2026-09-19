@@ -309,6 +309,8 @@ export async function cancelExam(req, res) {
   }
 }
 
+import { buildRescheduleWhatsAppMessage, sendWhatsAppNotification } from "../lib/whatsapp.js";
+
 export async function rescheduleExam(req, res) {
   try {
     const examId = parseExamId(req.params.id);
@@ -323,17 +325,49 @@ export async function rescheduleExam(req, res) {
         seven_day_reminder_sent_at = NULL, three_day_reminder_sent_at = NULL,
         two_hour_reminder_sent_at = NULL,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${examId} AND exam_date = CURRENT_DATE
-        AND lifecycle_status = 'SCHEDULED' AND payment_status = 'PENDING'
+      WHERE id = ${examId}
+        AND lifecycle_status = 'SCHEDULED'
         AND CAST(${parsedExamDate} AS DATE) >= CURRENT_DATE
-      RETURNING id, exam_date AS "examDate", exam_time AS "examTime",
+      RETURNING id, candidate_name AS "candidateName", exam_name AS "examName",
+        mobile_no AS "mobileNo", mode, center_name AS "centerName",
+        exam_date AS "examDate", exam_time AS "examTime",
         reminder_sent_at AS "reminderSentAt",
         one_hour_reminder_sent_at AS "oneHourReminderSentAt"
     `;
     if (!exams.length) {
       return res.status(409).json({ error: "Only an active exam can be rescheduled to today or later" });
     }
-    res.json(exams[0]);
+
+    const exam = exams[0];
+    const waMessage = buildRescheduleWhatsAppMessage(exam);
+
+    let waResult = { sent: false };
+    try {
+      waResult = await sendWhatsAppNotification(exam.mobileNo, waMessage);
+    } catch (err) {
+      console.warn("WhatsApp notification failed:", err.message);
+    }
+
+    // Create system notification for HR / Admin
+    try {
+      await prisma.notification.create({
+        data: {
+          targetRoles: ["ADMIN", "SUPER_ADMIN", "HR", "MANAGER"],
+          title: `Exam Rescheduled: ${exam.candidateName}`,
+          message: `${exam.candidateName}'s exam (${exam.examName}) was rescheduled to ${examDate} ${examTime}. WhatsApp notification sent.`,
+          type: "EXAM_RESCHEDULED",
+          relatedId: String(exam.id),
+        },
+      });
+    } catch (err) {
+      console.warn("System notification create error:", err.message);
+    }
+
+    res.json({
+      ...exam,
+      whatsappSent: waResult.sent,
+      whatsappMessage: waMessage,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to reschedule exam" });

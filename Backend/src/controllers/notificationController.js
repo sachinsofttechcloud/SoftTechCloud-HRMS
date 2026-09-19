@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { notifyEmployeeMilestones } from "../lib/employeeMilestones.js";
+import { getEffectiveModuleKeys, isFullAccessRole } from "../lib/moduleAccess.js";
 
 /**
  * 1. Fetch user notifications
@@ -16,8 +17,12 @@ export async function getNotifications(req, res) {
       console.warn("Milestone notify:", err.message);
     }
 
+    // Check module permissions for leads
+    const allowedModules = await getEffectiveModuleKeys(req.user);
+    const hasLeadAccess = isFullAccessRole(userRole) || allowedModules.includes("leads");
+
     // Notifications relevant to specific userId OR matching targetRoles
-    const notifications = await prisma.notification.findMany({
+    let notifications = await prisma.notification.findMany({
       where: {
         OR: [
           { userId },
@@ -38,6 +43,13 @@ export async function getNotifications(req, res) {
       orderBy: { createdAt: "desc" },
       take: 50,
     });
+
+    // If user does not have lead module access, filter out lead-related notifications
+    if (!hasLeadAccess) {
+      notifications = notifications.filter(
+        (n) => !n.type?.startsWith("LEAD_") && n.userId === userId ? true : !n.type?.startsWith("LEAD_")
+      );
+    }
 
     const unreadCount = notifications.filter((n) => !n.isRead).length;
 
