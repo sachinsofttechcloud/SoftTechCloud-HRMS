@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import { sendDueExamReminders, sendExamReminderIfDue } from "../lib/examReminders.js";
+import { saveBase64Media } from "../lib/fileStorage.js";
 
 const MAX_BULK_ROWS = 100000;
 const PAYMENT_STATUSES = new Set(["PENDING", "COMPLETED"]);
@@ -41,6 +42,7 @@ function validateCandidate(input = {}) {
   const examTime = String(input.examTime || "").trim();
   const voucher = toBoolean(input.voucher);
   const assistSupport = !voucher;
+  const aadharCard = input.aadharCard || input.identityDocument || null;
 
   if (!candidateName) errors.candidateName = "Please enter full name";
   if (!technology) errors.technology = "Please enter technology";
@@ -63,27 +65,29 @@ function validateCandidate(input = {}) {
       examTime,
       voucher,
       assistSupport,
+      aadharCard,
     },
   };
 }
 
 async function insertExam(data) {
   const parsedExamDate = new Date(`${data.examDate}T00:00:00.000Z`);
+  const savedAadharCard = data.aadharCard ? saveBase64Media(data.aadharCard, "aadhar", "aadhar") : null;
   const exams = await prisma.$queryRaw`
     INSERT INTO exams (
       candidate_name, technology, exam_name, mobile_no, mode, center_name,
-      exam_date, exam_time, voucher, assist_support, payment_status,
+      exam_date, exam_time, voucher, assist_support, aadhar_card, payment_status,
       lifecycle_status, updated_at
     )
     VALUES (
       ${data.candidateName}, ${data.technology}, ${data.examName}, ${data.mobileNo},
       'ONLINE', NULL, ${parsedExamDate}, ${data.examTime}, ${data.voucher},
-      ${data.assistSupport}, 'PENDING', 'SCHEDULED', CURRENT_TIMESTAMP
+      ${data.assistSupport}, ${savedAadharCard}, 'PENDING', 'SCHEDULED', CURRENT_TIMESTAMP
     )
     RETURNING
       id, candidate_name AS "candidateName", technology, exam_name AS "examName",
       mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
-      voucher, assist_support AS "assistSupport", payment_status AS "paymentStatus",
+      voucher, assist_support AS "assistSupport", aadhar_card AS "aadharCard", payment_status AS "paymentStatus",
       lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
       attended, reminder_sent_at AS "reminderSentAt",
       one_hour_reminder_sent_at AS "oneHourReminderSentAt",
@@ -145,7 +149,7 @@ export async function getUpcomingExams(req, res) {
     const exams = await prisma.$queryRaw`
       SELECT id, candidate_name AS "candidateName", technology, exam_name AS "examName",
         mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
-        voucher, assist_support AS "assistSupport", payment_status AS "paymentStatus",
+        voucher, assist_support AS "assistSupport", aadhar_card AS "aadharCard", payment_status AS "paymentStatus",
         lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
         attended, reminder_sent_at AS "reminderSentAt",
         one_hour_reminder_sent_at AS "oneHourReminderSentAt",
@@ -167,7 +171,7 @@ export async function getActiveExams(req, res) {
     const exams = await prisma.$queryRaw`
       SELECT id, candidate_name AS "candidateName", technology, exam_name AS "examName",
         mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
-        voucher, assist_support AS "assistSupport", payment_status AS "paymentStatus",
+        voucher, assist_support AS "assistSupport", aadhar_card AS "aadharCard", payment_status AS "paymentStatus",
         lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
         attended, reminder_sent_at AS "reminderSentAt",
         one_hour_reminder_sent_at AS "oneHourReminderSentAt",
@@ -189,7 +193,7 @@ export async function getPastExams(req, res) {
     const exams = await prisma.$queryRaw`
       SELECT id, candidate_name AS "candidateName", technology, exam_name AS "examName",
         mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
-        voucher, assist_support AS "assistSupport", payment_status AS "paymentStatus",
+        voucher, assist_support AS "assistSupport", aadhar_card AS "aadharCard", payment_status AS "paymentStatus",
         lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
         attended, reminder_sent_at AS "reminderSentAt",
         one_hour_reminder_sent_at AS "oneHourReminderSentAt",
@@ -203,6 +207,27 @@ export async function getPastExams(req, res) {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch past exams" });
+  }
+}
+
+export async function getCompletedExams(req, res) {
+  try {
+    const exams = await prisma.$queryRaw`
+      SELECT id, candidate_name AS "candidateName", technology, exam_name AS "examName",
+        mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
+        voucher, assist_support AS "assistSupport", aadhar_card AS "aadharCard", payment_status AS "paymentStatus",
+        lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
+        attended, reminder_sent_at AS "reminderSentAt",
+        one_hour_reminder_sent_at AS "oneHourReminderSentAt",
+        created_at AS "createdAt", updated_at AS "updatedAt"
+      FROM exams
+      WHERE payment_status = 'COMPLETED' OR attended = true OR lifecycle_status = 'COMPLETED'
+      ORDER BY updated_at DESC, exam_date DESC
+    `;
+    res.json(exams.map((exam) => ({ ...exam, status: "COMPLETED" })));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch completed candidate records" });
   }
 }
 

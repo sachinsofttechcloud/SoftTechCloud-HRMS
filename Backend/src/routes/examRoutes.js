@@ -4,6 +4,7 @@ import {
   getUpcomingExams,
   getActiveExams,
   getPastExams,
+  getCompletedExams,
   createExam,
   previewBulkExams,
   createBulkExams,
@@ -20,6 +21,7 @@ const router = express.Router();
 router.get("/upcoming-exams", authenticateToken, getUpcomingExams);
 router.get("/active-exams", authenticateToken, getActiveExams);
 router.get("/past-exams", authenticateToken, getPastExams);
+router.get("/completed-exams", authenticateToken, getCompletedExams);
 
 router.post("/edit-exams", authenticateToken, createExam);
 router.post("/bulk/preview", authenticateToken, previewBulkExams);

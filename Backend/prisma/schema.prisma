@@ -338,6 +338,7 @@ model Exam {
   threeDayReminderSentAt DateTime?     @map("three_day_reminder_sent_at")
   twoHourReminderSentAt  DateTime?     @map("two_hour_reminder_sent_at")
   attended               Boolean?
+  aadharCard             String?       @map("aadhar_card")
   documentStatus         String        @default("PENDING") @map("document_status")
   confirmationStatus     String        @default("PENDING") @map("confirmation_status")
   voucherStatus          String        @default("PENDING") @map("voucher_status")
