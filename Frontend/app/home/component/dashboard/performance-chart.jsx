@@ -110,7 +110,7 @@ export default function PerformanceChart({ monthlyGraph, loading }) {
     const strokeColor = METRIC_COLOR[activeMetric];
 
     return (
-        <div ref={containerRef} className="rounded-2xl border border-white/10 bg-slate-950/80 p-5 shadow-2xl backdrop-blur-xl space-y-4">
+        <div ref={containerRef} className="rounded-2xl border border-white/10 bg-[#0f172a] p-5 shadow-2xl backdrop-blur-xl space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-3">
                     <div className="rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-400 p-2.5 text-white shadow-lg shadow-blue-500/20">

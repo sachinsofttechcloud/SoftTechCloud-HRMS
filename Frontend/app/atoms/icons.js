@@ -155,3 +155,14 @@ export const ManageUsersIcon = (p) => (
     <path d="M19 15v4" />
   </svg>
 );
+
+export const CandidateRecordIcon = (p) => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}>
+    <rect x="2" y="4" width="20" height="16" rx="2" />
+    <circle cx="9" cy="10" r="2" />
+    <path d="M5.5 16c0-1.8 1.6-3 3.5-3s3.5 1.2 3.5 3" />
+    <line x1="15" y1="8" x2="19" y2="8" />
+    <line x1="15" y1="12" x2="19" y2="12" />
+    <line x1="15" y1="16" x2="18" y2="16" />
+  </svg>
+);

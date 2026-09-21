@@ -516,6 +516,10 @@ export async function apiGetPastExams() {
   return await fetcher("/exams/past-exams", { method: "GET" });
 }
 
+export async function apiGetCompletedExams() {
+  return await fetcher("/exams/completed-exams", { method: "GET" });
+}
+
 export async function apiCreateExam(payload) {
   return await fetcher("/exams/edit-exams", { method: "POST", body: JSON.stringify(payload) });
 }

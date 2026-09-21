@@ -87,7 +87,7 @@ function Stat({ icon: Icon, label, value, tone = "blue" }) {
     violet: "border-violet-500/20 bg-violet-500/10 text-violet-300",
   };
   return (
-    <div className="flex min-w-[135px] items-center gap-3 rounded-xl border border-white/10 bg-slate-950/70 px-3 py-2.5">
+    <div className="flex min-w-[135px] items-center gap-3 rounded-xl border border-white/10 bg-[#0f172a] px-3 py-2.5">
       <span className={`rounded-lg border p-2 ${tones[tone]}`}><Icon size={15} /></span>
       <span><span className="block text-lg font-bold text-white">{value || 0}</span><span className="text-[10px] uppercase tracking-wide text-slate-500">{label}</span></span>
     </div>
@@ -328,7 +328,7 @@ export default function LeadManagementView() {
 
       {view === "candidates" ? <CandidateRecords candidates={candidates} loading={candidateLoading} /> : (
         <>
-          <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-3 shadow-xl">
+          <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-3 shadow-xl">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex gap-2 overflow-x-auto">
                 <Stat icon={UsersRound} label="Total leads" value={summary.total} />
@@ -339,13 +339,13 @@ export default function LeadManagementView() {
 
               <div className="flex flex-wrap items-center gap-2">
                 <button type="button" onClick={exportRows} disabled={!leads.length} className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-white/20 hover:bg-white/10 disabled:opacity-40"><Download size={15} /> Export</button>
-                
+
                 <button type="button" onClick={() => setDrawer({})} className="inline-flex items-center gap-2 rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-bold text-slate-950 shadow-lg shadow-amber-500/10 transition hover:bg-amber-400"><Plus size={16} /> Add Lead</button>
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-3 shadow-xl">
+          <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-3 shadow-xl">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex gap-1.5 overflow-x-auto">
                 {[["", "All"], ["MINE", "My Leads"], ["OVERDUE", "Overdue"], ["DUPLICATE", "Duplicate"]].map(([id, label]) => <button key={label} onClick={() => setFilter(id)} className={`whitespace-nowrap rounded-full px-3.5 py-2 text-[10px] md:text-[12px] font-medium tracking-wider transition ${filter === id ? "bg-blue-600 text-white shadow-sm" : "border border-white/10 text-slate-400 hover:bg-white/5 hover:text-white"}`}>{label}</button>)}
@@ -363,7 +363,7 @@ export default function LeadManagementView() {
 
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/70 shadow-2xl">
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#0f172a] shadow-2xl">
             <div className="overflow-x-auto">
               <table className="min-w-[1500px] w-full text-left">
                 <thead className="border-b border-white/10 bg-black/60 text-[11px] font-semibold uppercase tracking-wider text-slate-300">

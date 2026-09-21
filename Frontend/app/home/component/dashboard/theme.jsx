@@ -2,7 +2,7 @@
 // card/section pulls the exact same colors instead of re-typing long class strings.
 
 export const cardClass =
-    "relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/80 backdrop-blur-xl p-4 shadow-xl transition-all duration-300 hover:border-blue-500/30 hover:shadow-blue-500/5";
+    "relative overflow-hidden rounded-2xl border border-white/10 bg-[#0f172a] backdrop-blur-xl p-4 shadow-xl transition-all duration-300 hover:border-blue-500/30 hover:shadow-blue-500/5";
 
 // One entry per accent color used by the KPI cards. `badge` colors the icon chip,
 // `value` colors the big number, `hoverBorder` is the footer button's hover state,

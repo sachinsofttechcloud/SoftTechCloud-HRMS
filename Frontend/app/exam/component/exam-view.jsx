@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { History, ClipboardCheck, CalendarClock, ChevronDown, Plus } from "lucide-react";
+import { History, ClipboardCheck, CalendarClock, ChevronDown, Plus, UserCheck } from "lucide-react";
 import ActiveExamSubmodule from "./active-exam-submodule";
 import UpcomingExamSubmodule from "./upcoming-exam-submodule";
 import PastExamSubmodule from "./past-exam-submodule";
@@ -12,24 +12,24 @@ import BulkImportModal from "./bulk-import-modal";
 import SuccessModal from "./success-modal";
 
 function localDateKey(value) {
-  if (!value) return "";
-  if (/^\d{4}-\d{2}-\d{2}/.test(String(value))) return String(value).slice(0, 10);
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toISOString().slice(0, 10);
+    if (!value) return "";
+    if (/^\d{4}-\d{2}-\d{2}/.test(String(value))) return String(value).slice(0, 10);
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "";
+    return date.toISOString().slice(0, 10);
 }
 
 function todayKey() {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
 function tabForExamDate(examDate) {
-  const date = localDateKey(examDate);
-  const today = todayKey();
-  if (date === today) return "Active";
-  if (date > today) return "Upcoming";
-  return "Past";
+    const date = localDateKey(examDate);
+    const today = todayKey();
+    if (date === today) return "Active";
+    if (date > today) return "Upcoming";
+    return "Past";
 }
 
 export default function ExamView() {
@@ -130,10 +130,10 @@ export default function ExamView() {
                 </div>
                 <div ref={menuRef} className="relative">
                     <Button className="w-max! whitespace-nowrap! md:py-2.5! text-sm! flex items-center gap-2 justify-center"
-                    handleClick={handleAddCandidate}>
-                        <Plus size={16}/>
+                        handleClick={handleAddCandidate}>
+                        <Plus size={16} />
                         Add Candidate
-                        <ChevronDown size={14}/>
+                        <ChevronDown size={14} />
                     </Button>
                     {showAddCandidateModal && (
                         <AddCandidateModal

@@ -84,7 +84,7 @@ export default function ModulesView() {
 
   return (
     <div className="w-full max-w-full mx-auto p-0 space-y-4 font-inter">
-      <div className="z-20 rounded-xl p-3 shadow-lg bg-slate-950/80 backdrop-blur-xl">
+      <div className="z-20 rounded-xl p-3 shadow-lg bg-[#0f172a] backdrop-blur-xl">
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-none">
           {submodules.map((sub) => {
             const Icon = sub.icon;
@@ -95,11 +95,10 @@ export default function ModulesView() {
                 key={sub.id}
                 type="button"
                 onClick={() => setActiveSubmodule(sub.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
-                  active
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${active
                     ? "bg-blue-600 border border-blue-500/50 text-white shadow-lg shadow-blue-600/30"
                     : "border border-white/10 bg-slate-900/60 backdrop-blur-xl text-slate-300 hover:bg-white/5 hover:text-white"
-                }`}
+                  }`}
               >
                 <Icon size={16} className={active ? "text-white" : "text-blue-400"} />
                 <span>{sub.label}</span>

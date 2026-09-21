@@ -9,7 +9,7 @@ export default function RecentLeadsDeals({ leads = [], deals = [], onNavigate })
     const recentDeals = deals.slice(0, 4);
 
     return (
-        <div className="w-full md:w-[60%] rounded-2xl border border-white/10 bg-slate-950/80 p-4 shadow-2xl backdrop-blur-xl flex flex-col justify-between space-y-3">
+        <div className="w-full md:w-[60%] rounded-2xl border border-white/10 bg-[#0f172a] p-4 shadow-2xl backdrop-blur-xl flex flex-col justify-between space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 pb-2.5">
                 <div className="flex items-center gap-2">
                     <span className="rounded-xl bg-blue-500/10 p-2 text-blue-400 border border-blue-500/20">

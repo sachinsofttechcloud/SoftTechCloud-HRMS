@@ -6,7 +6,7 @@ export default function UpcomingExamsTable({ exams = [], actionLoading, onNaviga
     const rows = exams.slice(0, 4);
 
     return (
-        <div className="rounded-2xl border border-white/10 bg-slate-950/80 p-5 shadow-2xl backdrop-blur-xl space-y-4">
+        <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-5 shadow-2xl backdrop-blur-xl space-y-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-3">
                     <div className="rounded-xl bg-emerald-500/10 p-2.5 text-emerald-400 border border-emerald-500/20">
@@ -58,8 +58,8 @@ export default function UpcomingExamsTable({ exams = [], actionLoading, onNaviga
                                 <td className="px-4 py-3">
                                     <span
                                         className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-bold border ${exam.payment === "Ready"
-                                                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                                                : "border-amber-500/30 bg-amber-500/10 text-amber-300"
+                                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                                            : "border-amber-500/30 bg-amber-500/10 text-amber-300"
                                             }`}
                                     >
                                         {exam.payment}

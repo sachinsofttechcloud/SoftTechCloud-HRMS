@@ -73,6 +73,7 @@ export default function Topbar({ user, onMenuClick }) {
     if (pathname.startsWith("/manage-users/roles")) return "Roles & Permissions";
     if (pathname === "/exam") return "Exam";
     if (pathname === "/leads") return "Leads Management";
+    if (pathname === "/candidate-record") return "Candidate Record";
     return "HRMS Portal";
   };
 

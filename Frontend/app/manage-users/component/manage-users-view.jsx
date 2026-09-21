@@ -192,21 +192,6 @@ export default function ManageUsersView() {
 
   return (
     <div className="space-y-5 font-inter">
-      {/* <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-        <div>
-          <Heading className="!text-xl sm:!text-2xl !font-bold !text-white">Manage Users</Heading>
-          <Description className="!text-xs !text-slate-400 mt-1">
-            After onboarding, Admin and Super Admin grant module access to each person.
-          </Description>
-        </div>
-        <Link
-          href="/manage-users/roles"
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-500 hover:bg-blue-400 px-4 py-2.5 text-sm font-semibold transition"
-        >
-          <Shield size={14} />
-          Roles & Permissions
-        </Link>
-      </div> */}
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-2">
@@ -220,8 +205,8 @@ export default function ManageUsersView() {
               type="button"
               onClick={() => setStatusFilter(tab.id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition ${statusFilter === tab.id
-                  ? "bg-blue-600/20 text-blue-300 border border-blue-500/30"
-                  : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
+                ? "bg-blue-600/20 text-blue-300 border border-blue-500/30"
+                : "bg-white/5 text-slate-300 border border-white/10 hover:bg-white/10"
                 }`}
             >
               <span>{tab.label}</span>
@@ -229,8 +214,8 @@ export default function ManageUsersView() {
               {/* Count Circle */}
               <span
                 className={`flex items-center justify-center w-6 h-6 rounded-full text-[12px] font-bold ${statusFilter === tab.id
-                    ? "bg-blue-600 text-white"
-                    : "bg-slate-700 text-slate-200"
+                  ? "bg-blue-600 text-white"
+                  : "bg-slate-700 text-slate-200"
                   }`}
               >
                 {tab.count}
@@ -264,7 +249,7 @@ export default function ManageUsersView() {
           <select
             value={pageSize}
             onChange={(e) => setPageSize(Number(e.target.value))}
-            className="rounded-lg border border-white/10 bg-[#0f172a] px-2 py-1 text-white focus:border-blue-500 focus:outline-none"
+            className="rounded-lg border border-white/10 bg-slate-900/80 px-2 py-1 text-white focus:outline-none"
             aria-label="Number of users per page"
           >
             <option value={10}>10</option>
@@ -330,8 +315,8 @@ export default function ManageUsersView() {
                             : `Change status to ${user.isActive ? "Inactive" : "Active"}`
                         }
                         className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-semibold border ${user.isActive
-                            ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
-                            : "bg-rose-500/15 border-rose-500/30 text-rose-300"
+                          ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
+                          : "bg-rose-500/15 border-rose-500/30 text-rose-300"
                           } disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-125 transition`}
                       >
                         {user.isActive ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
@@ -379,20 +364,19 @@ export default function ManageUsersView() {
               type="button"
               onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
               disabled={currentPage === 1 || loading}
-              className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-slate-300 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 font-semibold text-slate-300 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <ChevronLeft size={14} />
             </button>
 
-            <span className="min-w-20 text-center rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-semibold text-white">
-              Page {currentPage}
-            </span>
+            <span className="rounded-full bg-blue-600 px-3 py-1 text-white">{currentPage}</span>
+
 
             <button
               type="button"
               onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
               disabled={currentPage === totalPages || loading}
-              className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-[11px] font-semibold text-slate-300 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[11px] font-semibold text-slate-300 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <ChevronRight size={14} />
             </button>

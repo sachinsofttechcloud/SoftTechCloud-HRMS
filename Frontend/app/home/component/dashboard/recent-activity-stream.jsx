@@ -26,7 +26,7 @@ export default function RecentActivityStream({ leads = [], followUps = [] }) {
     }, [leads, followUps]);
 
     return (
-        <div className="rounded-2xl border border-white/10 bg-slate-950/80 p-5 shadow-2xl backdrop-blur-xl space-y-3">
+        <div className="rounded-2xl border border-white/10 bg-[#0f172a] p-5 shadow-2xl  space-y-3">
             <div className="flex items-center justify-between border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2.5">
                     <span className="rounded-xl bg-amber-500/10 p-2 text-amber-400 border border-amber-500/20">

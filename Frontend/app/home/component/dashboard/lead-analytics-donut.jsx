@@ -39,7 +39,7 @@ export default function LeadAnalyticsDonut({ leads = [] }) {
     const total = distribution.reduce((a, b) => a + b.value, 0);
 
     return (
-        <div className="w-full md:w-[40%] rounded-2xl border border-white/10 bg-slate-950/80 p-4 shadow-2xl backdrop-blur-xl flex flex-col space-y-3">
+        <div className="w-full md:w-[40%] rounded-2xl border border-white/10 bg-[#0f172a] p-4 shadow-2xl backdrop-blur-xl flex flex-col space-y-3">
             <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
                 <div className="flex items-center gap-2">
                     <span className="rounded-xl bg-violet-500/10 p-2 text-violet-400 border border-violet-500/20">

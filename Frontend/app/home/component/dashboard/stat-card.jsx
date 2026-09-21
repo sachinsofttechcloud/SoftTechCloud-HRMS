@@ -28,7 +28,7 @@ export default function StatCard({
     const toneClasses = TONE_MAP[tone] || TONE_MAP.blue;
 
     return (
-        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-slate-950/80 backdrop-blur-xl p-4 shadow-xl transition-all duration-300 hover:border-blue-500/30 hover:shadow-blue-500/5 flex flex-col justify-between">
+        <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0f172a] backdrop-blur-xl p-4 shadow-xl transition-all duration-300 hover:border-blue-500/30 hover:shadow-blue-500/5 flex flex-col justify-between">
             <div>
                 <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold tracking-wider text-slate-400 uppercase">{eyebrow}</span>

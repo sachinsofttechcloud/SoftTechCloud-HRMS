@@ -9,6 +9,8 @@ import {
   Building2,
   Calendar,
   CalendarClock,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Cpu,
   CreditCard,
@@ -82,6 +84,8 @@ export default function ExamListSubmodule({
   const [actionError, setActionError] = useState("");
   const [saving, setSaving] = useState(false);
   const [reschedule, setReschedule] = useState({ examDate: "", startTime: "", endTime: "" });
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const loadExams = async () => {
@@ -103,6 +107,7 @@ export default function ExamListSubmodule({
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setAppliedFilters(filters);
+      setCurrentPage(1);
     }, 400);
 
     return () => clearTimeout(timeoutId);
@@ -127,6 +132,12 @@ export default function ExamListSubmodule({
     });
   }, [appliedFilters, exams]);
 
+  const totalPages = Math.ceil(filteredExams.length / itemsPerPage) || 1;
+  const paginatedExams = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredExams.slice(start, start + itemsPerPage);
+  }, [filteredExams, currentPage, itemsPerPage]);
+
   const updateFilter = (field, value) => {
     setFilters((current) => ({ ...current, [field]: value }));
   };
@@ -134,6 +145,7 @@ export default function ExamListSubmodule({
   const clearFilters = () => {
     setFilters(EMPTY_FILTERS);
     setAppliedFilters(EMPTY_FILTERS);
+    setCurrentPage(1);
   };
 
   const openDialog = (exam, type) => {
@@ -238,15 +250,15 @@ export default function ExamListSubmodule({
           </label>
 
           <label className="space-y-1.5">
-  <span className="text-[14px] xl:text-[16px] font-medium !text-[#cfcaca] font-inter block mb-1.5">Date</span>
-  <input
-    type="date"
-    value={filters.date}
-    onChange={(event) => updateFilter("date", event.target.value)}
-    style={{ colorScheme: "dark" }}
-    className="bg-[#0f172a] w-full rounded-lg border border-white/10 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none transition cursor-pointer"
-  />
-</label>
+            <span className="text-[14px] xl:text-[16px] font-medium !text-[#cfcaca] font-inter block mb-1.5">Date</span>
+            <input
+              type="date"
+              value={filters.date}
+              onChange={(event) => updateFilter("date", event.target.value)}
+              style={{ colorScheme: "dark" }}
+              className="bg-[#0f172a] w-full rounded-lg border border-white/10 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none transition cursor-pointer"
+            />
+          </label>
 
           <label className="space-y-1.5">
             <span className="text-[14px] xl:text-[16px] font-medium !text-[#cfcaca] font-inter block mb-1.5">Time</span>
@@ -257,34 +269,53 @@ export default function ExamListSubmodule({
               className="bg-[#0f172a] w-full rounded-lg border border-white/10 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none transition cursor-pointer"
             />
           </label>
+
         </div>
 
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={handleExport}
-            disabled={!filteredExams.length}
-            className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Download size={16} />
-            Export
-          </button>
-          <button
-            type="button"
-            onClick={clearFilters}
-            className="px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-medium text-slate-300 transition cursor-pointer"
-          >
-            
-            Clear
-          </button>
-          <button
-            type="button"
-            onClick={() => setAppliedFilters({ ...filters })}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-          >
-            <Search size={15} />
-            Apply
-          </button>
+        <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs xl:text-sm font-medium text-[#cfcaca]">Show entity:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="bg-[#0f172a] rounded-lg border border-white/10 px-3 py-1.5 text-xs xl:text-sm text-white outline-none focus:border-blue-500 cursor-pointer"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={20}>20</option>
+            </select>
+          </div>
+
+          <div className="flex justify-end gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={!filteredExams.length}
+              className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Download size={16} />
+              Export
+            </button>
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="px-5 py-2.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-medium text-slate-300 transition cursor-pointer"
+            >
+              Clear
+            </button>
+            <button
+              type="button"
+              onClick={() => setAppliedFilters({ ...filters })}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
+            >
+              <Search size={15} />
+              Apply
+            </button>
+          </div>
         </div>
       </div>
 
@@ -294,7 +325,7 @@ export default function ExamListSubmodule({
         </p>
       ) : (
         <div className="flex w-full flex-col items-center gap-3">
-          {filteredExams.map((exam) => {
+          {paginatedExams.map((exam) => {
             const status = exam.status || defaultStatus;
 
             return (
@@ -309,9 +340,8 @@ export default function ExamListSubmodule({
                     openDialog(exam, "payment");
                   }
                 }}
-                className={`group relative w-full overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 via-amber-950/10 to-slate-900 p-5 text-left shadow-2xl backdrop-blur-xl transition hover:border-amber-500/30 hover:shadow-amber-500/10 ${
-                  interactive ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/60" : ""
-                }`}
+                className={`group relative w-full overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-slate-900 via-amber-950/10 to-slate-900 p-5 text-left shadow-2xl backdrop-blur-xl transition hover:border-amber-500/30 hover:shadow-amber-500/10 ${interactive ? "cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/60" : ""
+                  }`}
               >
                 <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-amber-500/10 blur-3xl transition group-hover:bg-amber-500/20" />
 
@@ -355,7 +385,7 @@ export default function ExamListSubmodule({
                     <IdCard size={14} className="mt-0.5 shrink-0 text-amber-400" />
                     <span>Carry Aadhaar Card or PAN Card</span>
                   </div>
-                
+
                 </div>
 
                 {/* <div className={`relative mb-3 flex items-start gap-1.5 rounded-lg border px-2.5 py-2 text-[11px] xl:text-[12px] ${
@@ -421,6 +451,39 @@ export default function ExamListSubmodule({
               </div>
             );
           })}
+
+          {filteredExams.length > 0 && (
+            <div className="mt-4 flex w-full flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/10 pt-4 px-2 text-xs text-slate-400">
+              <div>
+                Showing <span className="font-semibold text-white">{Math.min((currentPage - 1) * itemsPerPage + 1, filteredExams.length)}</span> to{" "}
+                <span className="font-semibold text-white">{Math.min(currentPage * itemsPerPage, filteredExams.length)}</span> of{" "}
+                <span className="font-semibold text-white">{filteredExams.length}</span> entries
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={currentPage <= 1}
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-slate-900 text-slate-300 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+                  title="Previous Page"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <span className="rounded-full bg-blue-600 px-2.5 py-1 text-white">{currentPage}</span>
+
+                <button
+                  type="button"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-slate-900 text-slate-300 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
+                  title="Next Page"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -463,11 +526,10 @@ export default function ExamListSubmodule({
                       type="button"
                       disabled={saving}
                       onClick={() => runAction(() => apiUpdateExamPayment(selectedExam.id, status))}
-                      className={`rounded-xl border px-3 py-3 text-xs font-bold ${
-                        status === "COMPLETED"
-                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                          : "border-amber-500/30 bg-amber-500/10 text-amber-300"
-                      } disabled:opacity-50`}
+                      className={`rounded-xl border px-3 py-3 text-xs font-bold ${status === "COMPLETED"
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                        : "border-amber-500/30 bg-amber-500/10 text-amber-300"
+                        } disabled:opacity-50`}
                     >
                       {status}
                     </button>

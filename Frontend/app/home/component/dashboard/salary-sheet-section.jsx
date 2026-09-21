@@ -40,7 +40,7 @@ export default function SalarySheetSection({ user, salarySlips = [] }) {
         <div className="space-y-3">
           <div className="overflow-x-auto rounded-xl border border-white/10 bg-slate-900/60 shadow-md">
             <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950/80 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-white/10">
+              <thead className="bg-[#0f172a] text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-white/10">
                 <tr>
                   <th className="py-3 px-4">Pay Period / Month</th>
                   <th className="py-3 px-4">Gross Salary</th>

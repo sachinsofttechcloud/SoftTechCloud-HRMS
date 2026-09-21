@@ -14,6 +14,7 @@ import {
   ShieldIcon,
   ExamIcon,
   LeadIcon,
+  CandidateRecordIcon,
 } from "@/app/atoms/icons";
 import Heading from "@/app/atoms/heading";
 import Description from "@/app/atoms/description";
@@ -79,6 +80,11 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
       href: "/leads",
       icon: LeadIcon,
     },
+    hasModule(user, "Candidate Record") && {
+      label: "Candidate Record",
+      href: "/candidate-record",
+      icon: CandidateRecordIcon,
+    }
   ].filter(Boolean);
 
   return (
@@ -97,7 +103,7 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
         <div>
           <div className="h-20 px-4 lg:mb-4 flex items-center justify-between relative">
             <Link href="/home" className="flex items-center gap-3 overflow-hidden">
-              <div className="h-10 w-10 shrink-0 rounded-xl bg-blue-500/20 border border-blue-500/10 flex items-center justify-center font-bold shadow-md text-[14px]">
+              <div className="h-10 w-10 shrink-0 flex items-center justify-center font-bold shadow-md text-[14px]">
                 <img src="/login/Logo-2.png" alt="logo" className="w-full h-full" />
               </div>
               {!isCollapsed && (
