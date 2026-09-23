@@ -155,13 +155,13 @@ export default function Topbar({ user, onMenuClick }) {
       {/* Right side: Actions & User Info */}
       <div className="flex items-center gap-3 sm:gap-4">
         {/* Open Webmail Shortcut */}
-        <Button
+        {/* <Button
           onClick={handleOpenWebmail}
           className="hidden sm:inline-flex !text-[12px] xl:!text-[14px] items-center gap-2 !text-blue-300 !bg-blue-600/20 hover:!bg-blue-600/30 !border !border-blue-500/30 !px-3.5 !py-2 transition shadow-sm"
         >
           <ExternalLinkIcon />
           <span>Webmail Inbox</span>
-        </Button>
+        </Button> */}
 
         {/* Notifications Dropdown Container */}
         <div className="relative" ref={notifContainerRef}>

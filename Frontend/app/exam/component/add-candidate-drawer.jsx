@@ -82,29 +82,29 @@ export default function AddCandidateDrawer({ onClose, onCreated }) {
     });
   };
 
-  const validate = () => {
+ const validate = () => {
     const nextErrors = {};
     if (!form.candidateName.trim()) nextErrors.candidateName = "Please enter full name";
     if (!form.technology.trim()) nextErrors.technology = "Please enter technology";
     if (!form.examName.trim()) nextErrors.examName = "Please enter exam name";
     if (!form.mobileNo.trim()) nextErrors.mobileNo = "Please enter mobile number";
-    else if (!/^\+?[\d\s()-]{7,20}$/.test(form.mobileNo.trim())) nextErrors.mobileNo = "Please enter a valid mobile number";
+    else if (!/^\d{10}$/.test(form.mobileNo.trim())) nextErrors.mobileNo = "Please enter a valid 10-digit mobile number";
     if (!form.examDate) nextErrors.examDate = "Please enter exam date";
     if (!form.startTime) nextErrors.startTime = "Please enter start time";
     if (!form.endTime) nextErrors.endTime = "Please enter end time";
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
-  };
+};
 
-  const handleAadharUpload = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      updateField("aadharCard", e.target?.result || "");
-    };
-    reader.readAsDataURL(file);
-  };
+  // const handleAadharUpload = (event) => {
+  //   const file = event.target.files?.[0];
+  //   if (!file) return;
+  //   const reader = new FileReader();
+  //   reader.onload = (e) => {
+  //     updateField("aadharCard", e.target?.result || "");
+  //   };
+  //   reader.readAsDataURL(file);
+  // };
 
   const submit = async (event) => {
     event.preventDefault();
@@ -182,18 +182,23 @@ export default function AddCandidateDrawer({ onClose, onCreated }) {
               </div>
             </Field>
 
-            <Field label="Mobile no." error={errors.mobileNo}>
-              <div className="relative">
-                <Phone size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-                <input
-                  type="tel"
-                  value={form.mobileNo}
-                  onChange={(event) => updateField("mobileNo", event.target.value)}
-                  placeholder="+91 98765 43210"
-                  className={`${inputClass} pl-9 ${errors.mobileNo ? "border-rose-500/50" : "border-white/10"}`}
-                />
-              </div>
-            </Field>
+           <Field label="Mobile no." error={errors.mobileNo}>
+  <div className="relative">
+    <Phone size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+    <input
+      type="tel"
+      inputMode="numeric"
+      maxLength={10}
+      value={form.mobileNo}
+      onChange={(event) => {
+        const digitsOnly = event.target.value.replace(/\D/g, "").slice(0, 10);
+        updateField("mobileNo", digitsOnly);
+      }}
+      placeholder="9876543210"
+      className={`${inputClass} pl-9 ${errors.mobileNo ? "border-rose-500/50" : "border-white/10"}`}
+    />
+  </div>
+</Field>
           </div>
 
           <Field label="Exam name" error={errors.examName}>
@@ -292,7 +297,7 @@ export default function AddCandidateDrawer({ onClose, onCreated }) {
             </Field>
           </div>
 
-          <div className="space-y-1.5">
+          {/* <div className="space-y-1.5">
             <span className="block text-[11px] font-semibold text-slate-400">Upload Aadhaar Card (Government Proof)</span>
             <div className="relative flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 p-2 text-xs text-white">
               <IdCard size={16} className="text-amber-400 shrink-0 ml-1" />
@@ -331,13 +336,17 @@ export default function AddCandidateDrawer({ onClose, onCreated }) {
                 </button>
               ) : null}
             </div>
-          </div>
+          </div> */}
 
           <div className="rounded-xl border border-blue-500/20 bg-blue-500/10 px-3 py-2.5 text-xs font-semibold text-blue-300">
             Exam mode: Online
           </div>
 
           <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-3">
+            <span>
+              <span className="block text-xs font-semibold text-white">Voucher Need</span>
+              <span className="text-[11px] text-slate-400">Voucher + Assist support will be provide.</span>
+            </span>
             <button
               type="button"
               role="checkbox"
@@ -349,10 +358,6 @@ export default function AddCandidateDrawer({ onClose, onCreated }) {
             >
               {form.voucher ? <Check size={13} /> : null}
             </button>
-            <span>
-              <span className="block text-xs font-semibold text-white">Voucher available</span>
-              <span className="text-[11px] text-slate-400">Assist support is disabled when a voucher is available.</span>
-            </span>
           </label>
 
           <div className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-3">

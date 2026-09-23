@@ -55,7 +55,13 @@ function toInputTime(value) {
 }
 
 function displayTime(value) {
+  console.log("value", value)
   return String(value || "").replace(/\bAM\b/gi, "Am").replace(/\bPM\b/gi, "Pm");
+}
+
+function displayStartTime(value) {
+  const [startTime] = String(value || "").split(/\s+to\s+/i);
+  return displayTime(startTime);
 }
 
 function reminderLabel(exam) {
@@ -202,7 +208,6 @@ export default function ExamListSubmodule({
         "Exam Date": exam.examDate ? new Date(exam.examDate).toISOString().slice(0, 10) : "",
         "Exam Time": displayTime(exam.examTime),
         Mode: "ONLINE",
-        "Government ID": "Carry Aadhaar Card or PAN Card",
         "SMS Reminder": exam.reminderSentAt ? "Sent" : "Auto 24 hours before exam",
         Voucher: exam.voucher ? "Yes" : "No",
         "Assist Support": exam.assistSupport ? "Yes" : "No",
@@ -260,7 +265,7 @@ export default function ExamListSubmodule({
             />
           </label>
 
-          <label className="space-y-1.5">
+          {/* <label className="space-y-1.5">
             <span className="text-[14px] xl:text-[16px] font-medium !text-[#cfcaca] font-inter block mb-1.5">Time</span>
             <input
               value={filters.time}
@@ -268,7 +273,7 @@ export default function ExamListSubmodule({
               placeholder="e.g. 10:00 AM"
               className="bg-[#0f172a] w-full rounded-lg border border-white/10 px-3 py-2 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 focus:outline-none transition cursor-pointer"
             />
-          </label>
+          </label> */}
 
         </div>
 
@@ -381,10 +386,7 @@ export default function ExamListSubmodule({
                     <TicketCheck size={13} className={exam.voucher ? "text-emerald-400" : "text-slate-500"} />
                     <span>{exam.voucher ? "Voucher + Assist Support cost Included" : "Assist Support Cost"}</span>
                   </div>
-                  <div className="flex items-start gap-1.5 text-slate-300">
-                    <IdCard size={14} className="mt-0.5 shrink-0 text-amber-400" />
-                    <span>Carry Aadhaar Card or PAN Card</span>
-                  </div>
+                
 
                 </div>
 
@@ -406,7 +408,7 @@ export default function ExamListSubmodule({
                   </div>
                   <div className="flex items-center gap-1.5 text-slate-400">
                     <Clock size={14} className="text-slate-500" />
-                    <span className="font-mono text-slate-300 text-[12px] xl:text-[14px]">{displayTime(exam.examTime)}</span>
+                    <span className="font-mono text-slate-300 text-[12px] xl:text-[14px]">{displayStartTime(exam.examTime)}</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-slate-400">
                     <Building2 size={14} className="text-slate-500" />

@@ -7,7 +7,7 @@ import {
   Calendar as CalendarIcon,
   CreditCard,
   FileText,
-  DollarSign,
+  IndianRupee,
 } from "lucide-react";
 import AttendanceTimeSubmodule from "./attendance-time-submodule";
 import { LeaveManagementSubmodule } from "./other-submodules";
@@ -24,7 +24,7 @@ const ALL_SUBMODULES = [
   { id: "calendar", moduleKey: "attendance", label: "Calendar & Holidays", icon: CalendarIcon },
   { id: "compensation", moduleKey: "attendance", label: "Compensation", icon: CreditCard },
   { id: "documents", moduleKey: "attendance", label: "HR Document Vault", icon: FileText },
-  { id: "payroll", moduleKey: "attendance", label: "Payroll Management", icon: DollarSign },
+  { id: "payroll", moduleKey: "attendance", label: "Payroll Management", icon: IndianRupee },
 ];
 
 function canAccessModule(user, key) {

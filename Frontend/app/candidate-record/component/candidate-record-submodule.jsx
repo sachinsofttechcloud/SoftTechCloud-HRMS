@@ -49,7 +49,7 @@ const ALL_COLUMNS = [
   { id: "assistSupport", label: "Assist Support", defaultVisible: false },
   { id: "paymentStatus", label: "Payment Status", defaultVisible: true },
   { id: "status", label: "Status", defaultVisible: true },
-  { id: "aadharCard", label: "Government Proof", defaultVisible: true },
+  // { id: "aadharCard", label: "Government Proof", defaultVisible: true },
 ];
 
 function displayTime(value) {
@@ -415,7 +415,7 @@ export default function CandidateRecordSubmodule({ refreshKey = 0 }) {
                   {visibleColumns.assistSupport && <th className="px-4 py-3.5 whitespace-nowrap">Assist Support</th>}
                   {visibleColumns.paymentStatus && <th className="px-4 py-3.5 whitespace-nowrap">Payment Status</th>}
                   {visibleColumns.status && <th className="px-4 py-3.5 whitespace-nowrap">Status</th>}
-                  {visibleColumns.aadharCard && <th className="px-4 py-3.5 whitespace-nowrap">Gover Proof</th>}
+                  {/* {visibleColumns.aadharCard && <th className="px-4 py-3.5 whitespace-nowrap">Gover Proof</th>} */}
                   {/* Action column is always shown — it's not user data, so it isn't part of ALL_COLUMNS / the visibility toggle */}
                   <th className="px-4 py-3.5 text-center whitespace-nowrap">Action</th>
                 </tr>

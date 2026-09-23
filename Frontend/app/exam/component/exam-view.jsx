@@ -67,6 +67,11 @@ export default function ExamView() {
             label: "Past Exams",
             icon: History,
         },
+        {
+            id: "Case Raise",
+            label: "Case Raise",
+            icon: UserCheck,
+        }
     ];
 
     useEffect(() => {
@@ -106,7 +111,7 @@ export default function ExamView() {
 
     return (
         <div className="relative w-full max-w-full mx-auto p-0 space-y-4 font-inter">
-            <div className="z-20 rounded-xl p-3 shadow-lg bg-slate-950/80 backdrop-blur-xl flex flex-col md:flex-row gap-4 md:justify-between md:items-center">
+            <div className="z-20 rounded-xl p-3 shadow-lg bg-[#0f172a] backdrop-blur-xl flex flex-col md:flex-row gap-4 md:justify-between md:items-center">
                 <div className="flex items-center gap-2 overflow-x-auto">
                     {submodules.map((sub) => {
                         const Icon = sub.icon;

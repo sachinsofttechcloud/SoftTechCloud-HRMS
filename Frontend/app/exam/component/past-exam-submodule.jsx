@@ -10,6 +10,10 @@ export default function PastExamSubmodule({ refreshKey = 0 }) {
       defaultStatus="MISSED"
       refreshKey={refreshKey}
       showPaymentStatus
+      interactive
     />
   );
 }
+
+
+

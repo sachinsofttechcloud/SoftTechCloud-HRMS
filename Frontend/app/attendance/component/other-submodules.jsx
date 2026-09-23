@@ -464,7 +464,9 @@ export function LeaveManagementSubmodule({ user }) {
                       />
                     </div>
                     <div>
-                      <label className="text-slate-400 block mb-1">End Time *</label>
+                      <label className="text-slate-400 block mb-1">End Time *
+                        
+                      </label>
                       <input
                         type="text"
                         required
