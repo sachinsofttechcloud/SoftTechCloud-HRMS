@@ -5,6 +5,7 @@ import {
   getActiveExams,
   getPastExams,
   getCompletedExams,
+  getExamById,
   createExam,
   previewBulkExams,
   createBulkExams,
@@ -22,6 +23,8 @@ router.get("/upcoming-exams", authenticateToken, getUpcomingExams);
 router.get("/active-exams", authenticateToken, getActiveExams);
 router.get("/past-exams", authenticateToken, getPastExams);
 router.get("/completed-exams", authenticateToken, getCompletedExams);
+router.get("/:id", authenticateToken, getExamById);
+
 
 router.post("/edit-exams", authenticateToken, createExam);
 router.post("/bulk/preview", authenticateToken, previewBulkExams);

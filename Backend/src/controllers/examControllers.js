@@ -231,6 +231,39 @@ export async function getCompletedExams(req, res) {
   }
 }
 
+export async function getExamById(req, res) {
+  try {
+    const examId = parseExamId(req.params.id);
+    if (!examId) return res.status(400).json({ error: "Invalid candidate ID" });
+
+    const exams = await prisma.$queryRaw`
+      SELECT id, candidate_name AS "candidateName", technology, exam_name AS "examName",
+        mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
+        voucher, assist_support AS "assistSupport", aadhar_card AS "aadharCard", payment_status AS "paymentStatus",
+        lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
+        attended, reminder_sent_at AS "reminderSentAt",
+        one_hour_reminder_sent_at AS "oneHourReminderSentAt",
+        created_at AS "createdAt", updated_at AS "updatedAt"
+      FROM exams
+      WHERE id = ${examId}
+    `;
+
+    if (!exams || exams.length === 0) {
+      return res.status(404).json({ error: "Candidate record not found" });
+    }
+
+    const exam = exams[0];
+    res.json({
+      ...exam,
+      status: exam.payment_status === "COMPLETED" || exam.attended ? "COMPLETED" : exam.lifecycle_status,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch candidate details" });
+  }
+}
+
+
 export async function createExam(req, res) {
   try {
     const { errors, data } = validateCandidate(req.body);

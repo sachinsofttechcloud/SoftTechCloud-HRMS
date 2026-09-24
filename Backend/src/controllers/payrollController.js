@@ -35,7 +35,7 @@ function normalizeMonth(month) {
   };
 }
 
-function lastNMonths(n = 6) {
+function lastNMonths(n = 3) {
   const months = [];
   const now = new Date();
   for (let i = 0; i < n; i++) {
@@ -70,7 +70,7 @@ function slipPayload(user, compensation, monthMeta, generatedBy) {
 async function ensureSlipsForUser(user, compensation, generatedBy = "Payroll System") {
   if (!compensation) return [];
   const created = [];
-  for (const monthMeta of lastNMonths(6)) {
+  for (const monthMeta of lastNMonths(3)) {
     const existing = await prisma.salarySlip.findUnique({
       where: { userId_month: { userId: user.id, month: monthMeta.month } },
     });
