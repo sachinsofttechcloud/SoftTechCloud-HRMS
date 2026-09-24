@@ -40,6 +40,83 @@ body {
 }
 
 /* ==================================
+   WHITE THEME (LIGHT MODE) OVERRIDES
+================================== */
+
+html.white-theme,
+html.white-theme body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html.white-theme .global-theme-bg,
+html.white-theme .global-background {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.08), transparent 35%),
+    radial-gradient(circle at 80% 30%, rgba(14, 165, 233, 0.08), transparent 35%),
+    linear-gradient(135deg, #f8fafc 0%, #f1f5f9 50%, #e2e8f0 100%) !important;
+}
+
+html.white-theme header {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  color: #0f172a !important;
+}
+
+html.white-theme aside {
+  background-color: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+html.white-theme .theme-card {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: #0f172a !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
+}
+
+html.white-theme .topbar-datetime,
+html.white-theme .topbar-icon-btn {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  color: #1e293b !important;
+}
+
+html.white-theme .topbar-datetime:hover,
+html.white-theme .topbar-icon-btn:hover {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+html.white-theme .topbar-dropdown {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+html.white-theme .topbar-dropdown-text {
+  color: #0f172a !important;
+}
+
+html.white-theme .topbar-dropdown-subtext {
+  color: #64748b !important;
+}
+
+html.white-theme .topbar-dropdown-hr {
+  border-color: #e2e8f0 !important;
+}
+
+html.white-theme .topbar-dropdown-item {
+  color: #334155 !important;
+}
+
+html.white-theme .topbar-dropdown-item:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+
+/* ==================================
    GLOBAL STATIC THEME BACKGROUND (All pages)
 ================================== */
 
@@ -216,29 +293,49 @@ body {
 }
 
 /* ==================================
-   SCROLLBAR & SELECTION
+   SMOOTH & ANIMATED SCROLLBAR SYSTEM
 ================================== */
 
+/* Modern WebKit Scrollbar Styling */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #020617;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg,
-      #00d4ff,
-      #2563eb);
-  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  backdrop-filter: blur(8px);
+  transition: background 0.3s ease, transform 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg,
-      #67e8f9,
-      #3b82f6);
+  background: linear-gradient(180deg, #3b82f6, #06b6d4);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
+}
+
+/* Scrollbar Utility Classes for complete hiding when desired */
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+/* Firefox scrollbar refinement */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
 ::selection {

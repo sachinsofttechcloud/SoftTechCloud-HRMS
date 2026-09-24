@@ -520,6 +520,11 @@ export async function apiGetCompletedExams() {
   return await fetcher("/exams/completed-exams", { method: "GET" });
 }
 
+export async function apiGetExamById(id) {
+  return await fetcher(`/exams/${id}`, { method: "GET" });
+}
+
+
 export async function apiCreateExam(payload) {
   return await fetcher("/exams/edit-exams", { method: "POST", body: JSON.stringify(payload) });
 }

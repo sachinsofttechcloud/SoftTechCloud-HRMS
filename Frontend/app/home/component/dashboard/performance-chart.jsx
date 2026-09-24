@@ -31,6 +31,15 @@ const TODAY_DATA = [
     { month: "07 PM", leads: 38, exams: 24, revenue: 185000 },
 ];
 
+const TOMORROW_DATA = [
+    { month: "09 AM", leads: 5, exams: 3, revenue: 15000 },
+    { month: "11 AM", leads: 11, exams: 6, revenue: 38000 },
+    { month: "01 PM", leads: 18, exams: 10, revenue: 65000 },
+    { month: "03 PM", leads: 25, exams: 15, revenue: 105000 },
+    { month: "05 PM", leads: 34, exams: 21, revenue: 155000 },
+    { month: "07 PM", leads: 42, exams: 27, revenue: 195000 },
+];
+
 const WEEK_DATA = [
     { month: "Mon", leads: 15, exams: 10, revenue: 70000 },
     { month: "Tue", leads: 24, exams: 16, revenue: 105000 },
@@ -64,10 +73,25 @@ export default function PerformanceChart({ monthlyGraph, loading }) {
     }, []);
 
     const chartData = useMemo(() => {
-        if (graphTimeFilter === "today") return TODAY_DATA;
-        if (graphTimeFilter === "week") return WEEK_DATA;
-        if (graphTimeFilter === "month") return MONTH_DATA;
-        return monthlyGraph?.length ? monthlyGraph : FALLBACK_YEAR_DATA; // year
+        if (graphTimeFilter === "today") {
+            return TODAY_DATA;
+        }
+
+        if (graphTimeFilter === "tomorrow") {
+            return TOMORROW_DATA;
+        }
+
+        if (graphTimeFilter === "week") {
+            return WEEK_DATA;
+        }
+
+        if (graphTimeFilter === "month") {
+            return MONTH_DATA;
+        }
+
+        return monthlyGraph?.length
+            ? monthlyGraph
+            : FALLBACK_YEAR_DATA;
     }, [graphTimeFilter, monthlyGraph]);
 
     const maxVal = useMemo(() => {

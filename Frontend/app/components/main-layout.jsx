@@ -12,7 +12,7 @@ const AUTH_ROUTES = ["/", "/login-in", "/forgot-password", "/reset-password"];
 export default function MainLayout({ children }) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [user, setUser] = useState(null);
 
   // Check if current route is an auth page

@@ -55,6 +55,7 @@ export const TONE_MAP = {
 
 export const TIME_FILTER_LABELS = {
     today: "Today",
+    tomorrow: "Tomorrow",
     week: "This Week",
     month: "This Month",
     year: "This Year",

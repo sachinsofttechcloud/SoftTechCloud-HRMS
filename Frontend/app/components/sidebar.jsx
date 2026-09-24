@@ -87,6 +87,18 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
     }
   ].filter(Boolean);
 
+  const handleMouseEnter = () => {
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+      setIsCollapsed(false);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+      setIsCollapsed(true);
+    }
+  };
+
   return (
     <>
       {isOpen && (
@@ -97,33 +109,27 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
       )}
 
       <aside
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         className={`fixed top-0 left-0 bottom-0 z-50 bg-[#0b1120] border-r border-white/10 flex flex-col justify-between transition-all duration-300 ease-in-out lg:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"
           } ${isCollapsed ? "lg:w-22" : "lg:w-74"} w-74`}
       >
-        <div>
-          <div className="h-20 px-4 lg:mb-4 flex items-center justify-between relative">
+        <div className="overflow-hidden">
+          {/* Logo & App Title Header */}
+          <div className="h-20 px-4 lg:mb-4 flex items-center justify-between relative overflow-hidden">
             <Link href="/home" className="flex items-center gap-3 overflow-hidden">
               <div className="h-10 w-10 shrink-0 flex items-center justify-center font-bold shadow-md text-[14px]">
                 <img src="/login/Logo-2.png" alt="logo" className="w-full h-full" />
               </div>
-              {!isCollapsed && (
-                <div className="truncate">
-                  <Heading className="!text-[14px] sm:!text-[20px] !font-bold !text-white tracking-tight font-inter block truncate">
-                    SoftTech Cloud
-                  </Heading>
-
-                </div>
-              )}
+              <div
+                className={`transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap ${isCollapsed ? "lg:opacity-0 lg:max-w-0" : "opacity-100 max-w-[200px]"
+                  }`}
+              >
+                <Heading className="!text-[14px] sm:!text-[20px] !font-bold !text-white tracking-tight font-inter block truncate">
+                  SoftTech Cloud
+                </Heading>
+              </div>
             </Link>
-
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="hidden lg:flex absolute -right-3.5 top-1/2 -translate-y-1/2 h-8 w-8 items-center justify-center rounded-full bg-[#1e293b] text-slate-300 hover:text-white hover:bg-blue-500/20 hover:border border-blue-500/10 transition shadow-md z-10"
-              title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-              aria-label="Toggle Sidebar Collapse"
-            >
-              {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-            </button>
 
             <button
               onClick={() => setIsOpen(false)}
@@ -133,19 +139,24 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
             </button>
           </div>
 
-          <div className="p-3 space-y-1.5">
-            {!isCollapsed && (
-              <Description className="!text-[11px] font-semibold !text-slate-500 uppercase tracking-wider px-3 mb-2 block">
+          {/* Main Navigation Menu */}
+          <div className="p-3 space-y-1.5 overflow-hidden">
+            <div
+              className={`transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap px-3 ${isCollapsed ? "lg:opacity-0 lg:max-w-0 lg:mb-0 lg:h-0" : "opacity-100 max-w-full mb-2 h-auto"
+                }`}
+            >
+              <Description className="!text-[11px] font-semibold !text-slate-500 uppercase tracking-wider block">
                 MAIN MENU
               </Description>
-            )}
+            </div>
 
             {navItems.length === 0 ? (
-              !isCollapsed && (
-                <div className="px-3 py-4 text-[11px] text-slate-500 italic">
-                  No modules assigned yet. Ask Admin for access after onboarding.
-                </div>
-              )
+              <div
+                className={`transition-all duration-300 ease-in-out overflow-hidden px-3 py-4 text-[11px] text-slate-500 italic ${isCollapsed ? "lg:opacity-0 lg:max-w-0" : "opacity-100 max-w-full"
+                  }`}
+              >
+                No modules assigned yet. Ask Admin for access after onboarding.
+              </div>
             ) : (
               navItems.map((item) => {
                 const Icon = item.icon;
@@ -162,27 +173,30 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
                         title={isCollapsed ? item.label : undefined}
                         aria-expanded={showManageMenu}
                         aria-haspopup="menu"
-                        className={`w-full focus:outline-none focus:ring-0 flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-medium transition group ${isCollapsed ? "justify-center" : "justify-between"
-                          } ${isActive
+                        className={`w-full focus:outline-none focus:ring-0 flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-medium transition-all duration-300 group overflow-hidden ${isActive
                             ? "bg-blue-500/20 border border-blue-500/20 text-white font-semibold shadow-lg shadow-blue-500/20"
                             : "text-slate-300 hover:bg-white/5 hover:text-white"
                           }`}
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 overflow-hidden">
                           <Icon
                             className={
                               isActive
-                                ? "text-white"
+                                ? "text-white shrink-0"
                                 : "text-slate-400 group-hover:text-white transition shrink-0"
                             }
                           />
-                          {!isCollapsed && <span className="text-[12px] sm:text-[14px] font-medium tracking-wider">{item.label}</span>}
+                          <span
+                            className={`text-[12px] sm:text-[14px] font-medium tracking-wider whitespace-nowrap transition-all duration-300 ease-in-out overflow-hidden ${isCollapsed ? "lg:opacity-0 lg:max-w-0" : "opacity-100 max-w-[200px]"
+                              }`}
+                          >
+                            {item.label}
+                          </span>
                         </div>
-                        {!isCollapsed && (
-                          <ChevronRightIcon
-                            className={`transition-transform ${showManageMenu ? "rotate-90" : ""}`}
-                          />
-                        )}
+                        <ChevronRightIcon
+                          className={`transition-all duration-300 shrink-0 ${showManageMenu ? "rotate-90" : ""
+                            } ${isCollapsed ? "lg:opacity-0 lg:w-0" : "opacity-100 w-4"}`}
+                        />
                       </button>
 
                       {showManageMenu && (
@@ -206,12 +220,14 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
                                   setIsOpen(false);
                                 }}
                                 className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-xs font-semibold transition ${childActive
-                                  ? "bg-blue-600 text-white"
-                                  : "text-slate-700 hover:bg-white/5 hover:text-white"
+                                    ? "bg-blue-600 text-white"
+                                    : "text-slate-700 hover:bg-white/5 hover:text-white"
                                   }`}
                               >
                                 <ChildIcon className="text-slate-400 group-hover:text-white transition shrink-0" />
-                                <span className="text-[10px] sm:text-[12px] font-medium tracking-wider text-slate-300 ">{child.label}</span>
+                                <span className="text-[10px] sm:text-[12px] font-medium tracking-wider text-slate-300">
+                                  {child.label}
+                                </span>
                               </Link>
                             );
                           })}
@@ -227,25 +243,34 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
                     href={item.href}
                     onClick={() => setIsOpen(false)}
                     title={isCollapsed ? item.label : undefined}
-                    className={`mb-2 focus:outline-none focus:ring-0 focus:border-transparent flex items-center gap-3 px-3.5 py-3 rounded-xl text-xs font-medium transition group ${isCollapsed ? "justify-center" : "justify-between"
-                      } ${isActive
+                    className={`mb-2 focus:outline-none focus:ring-0 focus:border-transparent flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-medium transition-all duration-300 group overflow-hidden ${isActive
                         ? "bg-blue-500/20 border border-blue-500/20 text-white font-semibold shadow-lg shadow-blue-500/20"
                         : "text-slate-300 hover:bg-white/5 hover:text-white"
                       }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 overflow-hidden">
                       <Icon
                         className={
                           isActive
-                            ? "text-white"
+                            ? "text-white shrink-0"
                             : "text-slate-400 group-hover:text-white transition shrink-0"
                         }
                       />
-                      {!isCollapsed && <span className="text-[12px] sm:text-[14px] font-medium tracking-wider">{item.label}</span>}
+                      <span
+                        className={`text-[12px] sm:text-[14px] font-medium tracking-wider whitespace-nowrap transition-all duration-300 ease-in-out overflow-hidden ${isCollapsed ? "lg:opacity-0 lg:max-w-0" : "opacity-100 max-w-[200px]"
+                          }`}
+                      >
+                        {item.label}
+                      </span>
                     </div>
 
-                    {!isCollapsed && item.badge && (
-                      <span className="text-[10px] bg-blue-500/20 border border-blue-500/10 text-blue-400 px-2 py-0.5 rounded-md font-semibold">
+                    {item.badge && (
+                      <span
+                        className={`text-[10px] bg-blue-500/20 border border-blue-500/10 text-blue-400 px-2 py-0.5 rounded-md font-semibold whitespace-nowrap transition-all duration-300 ease-in-out overflow-hidden ${isCollapsed
+                            ? "lg:opacity-0 lg:max-w-0 lg:p-0 lg:border-0"
+                            : "opacity-100 max-w-[80px]"
+                          }`}
+                      >
                         {item.badge}
                       </span>
                     )}
@@ -256,40 +281,24 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
           </div>
         </div>
 
-        <div className="p-3 border-t border-white/10 bg-black/20">
-          {!isCollapsed ? (
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5">
-                <div className="h-9 w-9 rounded-lg bg-blue-500/20 border border-blue-500/10 flex items-center justify-center font-bold text-white text-xs shrink-0">
-                  {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <Heading className="!text-xs !font-semibold !text-white truncate font-inter">
-                    {user?.name || "Employee"}
-                  </Heading>
-                  <Description className="!text-[11px] !text-white truncate">
-                    {user?.role || "EMPLOYEE"}
-                  </Description>
-                </div>
-              </div>
-
-              <button
-                onClick={apiLogout}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-xs font-medium transition"
-              >
-                <LogOutIcon />
-                <span>Sign Out</span>
-              </button>
+        {/* Bottom User Info Section */}
+        <div className="p-3 border-t border-white/10 bg-black/20 overflow-hidden">
+          <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white/5 overflow-hidden">
+            <div className="h-9 w-9 rounded-lg bg-blue-500/20 border border-blue-500/10 flex items-center justify-center font-bold text-white text-xs shrink-0">
+              {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
             </div>
-          ) : (
-            <button
-              onClick={apiLogout}
-              title="Sign Out"
-              className="w-full flex items-center justify-center py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 transition"
+            <div
+              className={`flex-1 min-w-0 transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap ${isCollapsed ? "lg:opacity-0 lg:max-w-0" : "opacity-100 max-w-[180px]"
+                }`}
             >
-              <LogOutIcon />
-            </button>
-          )}
+              <Heading className="!text-xs !font-semibold !text-white truncate font-inter">
+                {user?.name || "Employee"}
+              </Heading>
+              <Description className="!text-[11px] !text-white truncate">
+                {user?.role || "EMPLOYEE"}
+              </Description>
+            </div>
+          </div>
         </div>
       </aside>
     </>

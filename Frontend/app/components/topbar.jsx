@@ -13,9 +13,8 @@ import Description from "@/app/atoms/description";
 import { apiLogout } from "@/app/lib/api";
 import Button from "../atoms/button";
 
-
 import { useState, useEffect, useRef } from "react";
-import { Bell, CheckCheck, X, User } from "lucide-react";
+import { Bell, CheckCheck, X, User, Clock, Sun, Moon } from "lucide-react";
 import { apiGetNotifications, apiMarkAllNotificationsRead, apiMarkNotificationRead } from "@/app/lib/api";
 import { getMediaUrl } from "@/app/lib/utils";
 
@@ -50,14 +49,80 @@ export default function Topbar({ user, onMenuClick }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
-  const notifContainerRef = useRef(null);
+  const [currentDateTime, setCurrentDateTime] = useState("");
+  const [theme, setTheme] = useState("dark");
 
-  // Close notification menu on outside click
+  const notifContainerRef = useRef(null);
+  const profileContainerRef = useRef(null);
+
+  // Live Date and Time update
+  useEffect(() => {
+    const updateDateTime = () => {
+      const now = new Date();
+
+      const day = now.toLocaleDateString("en-US", {
+        weekday: "short",
+      });
+
+      const date = now.getDate();
+
+      const month = now.toLocaleDateString("en-US", {
+        month: "short",
+      }).replace("Sep", "Sept");
+
+      const time = now.toLocaleTimeString("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+
+      setCurrentDateTime(`${day}, ${month} ${date} | ${time}`);
+    };
+
+    updateDateTime();
+
+    const interval = setInterval(updateDateTime, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Theme Sync & Toggle
+  // useEffect(() => {
+  //   const savedTheme = localStorage.getItem("hrms_theme") || "dark";
+  //   setTheme(savedTheme);
+  //   if (savedTheme === "white") {
+  //     document.documentElement.classList.add("white-theme");
+  //     document.documentElement.classList.remove("dark");
+  //   } else {
+  //     document.documentElement.classList.remove("white-theme");
+  //     document.documentElement.classList.add("dark");
+  //   }
+  // }, []);
+
+  // const toggleTheme = () => {
+  //   const nextTheme = theme === "dark" ? "white" : "dark";
+  //   setTheme(nextTheme);
+  //   localStorage.setItem("hrms_theme", nextTheme);
+
+  //   if (nextTheme === "white") {
+  //     document.documentElement.classList.add("white-theme");
+  //     document.documentElement.classList.remove("dark");
+  //   } else {
+  //     document.documentElement.classList.remove("white-theme");
+  //     document.documentElement.classList.add("dark");
+  //   }
+  // };
+
+  // Close menus on outside click
   useEffect(() => {
     function handleClickOutside(event) {
       if (notifContainerRef.current && !notifContainerRef.current.contains(event.target)) {
         setShowNotifMenu(false);
+      }
+      if (profileContainerRef.current && !profileContainerRef.current.contains(event.target)) {
+        setShowProfileMenu(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -74,6 +139,7 @@ export default function Topbar({ user, onMenuClick }) {
     if (pathname === "/exam") return "Exam";
     if (pathname === "/leads") return "Leads Management";
     if (pathname === "/candidate-record") return "Candidate Record";
+    if (pathname.startsWith("/candidate-record/")) return "Candidate Details";
     return "HRMS Portal";
   };
 
@@ -91,7 +157,7 @@ export default function Topbar({ user, onMenuClick }) {
 
   useEffect(() => {
     fetchUserNotifs();
-    const interval = setInterval(fetchUserNotifs, 15000); // Poll every 15s
+    const interval = setInterval(fetchUserNotifs, 70000); // Poll every 60s (1 minute)
     return () => clearInterval(interval);
   }, []);
 
@@ -118,25 +184,13 @@ export default function Topbar({ user, onMenuClick }) {
     }
   };
 
-  const handleOpenWebmail = () => {
-    window.open(
-      "https://sh024.webhostingservices.com:2096/cpsess8337035536/3rdparty/roundcube/?_task=mail&_mbox=INBOX",
-      "_blank",
-      "noopener,noreferrer"
-    );
-  };
-
-  const handClickProfile = () => {
-    router.push("/profile");
-  };
-
   return (
-    <header className="h-20 md:h-25 bg-[#0b1120]/80 backdrop-blur-xl border-b border-white/10 sticky top-0 z-30 px-5 sm:px-18 flex items-center justify-between">
+    <header className="h-20 md:h-25 bg-[#0b1120]/80 backdrop-blur-xl border-b border-white/10 sticky top-0 z-30 px-5 sm:px-18 flex items-center justify-between transition-colors duration-300">
       {/* Left side: Hamburger menu + Page Title */}
       <div className="flex items-center gap-4">
         <button
           onClick={onMenuClick}
-          className="lg:hidden text-slate-400 hover:text-white p-2.5 rounded-xl bg-white/5 border border-white/10 transition cursor-pointer"
+          className="lg:hidden text-slate-400 hover:text-white p-2.5 rounded-xl bg-white/5 border border-white/10 transition cursor-pointer topbar-icon-btn"
           aria-label="Open Navigation Menu"
         >
           <MenuIcon />
@@ -146,22 +200,16 @@ export default function Topbar({ user, onMenuClick }) {
           <Heading className="!text-[16px] xl:!text-[24px] !text-white tracking-tight font-inter">
             {getPageTitle()}
           </Heading>
-          {/* <Description className="!text-[8px] xl:!text-[12px] !text-slate-400 hidden sm:block mt-0.5">
-            SoftTechCloud Enterprise HRMS Portal
-          </Description> */}
         </div>
       </div>
 
-      {/* Right side: Actions & User Info */}
-      <div className="flex items-center gap-3 sm:gap-4">
-        {/* Open Webmail Shortcut */}
-        {/* <Button
-          onClick={handleOpenWebmail}
-          className="hidden sm:inline-flex !text-[12px] xl:!text-[14px] items-center gap-2 !text-blue-300 !bg-blue-600/20 hover:!bg-blue-600/30 !border !border-blue-500/30 !px-3.5 !py-2 transition shadow-sm"
-        >
-          <ExternalLinkIcon />
-          <span>Webmail Inbox</span>
-        </Button> */}
+      {/* Right side: Actions, Date/Time, Notifs, Theme, & User Profile */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Live Date, Month, Year & Time display (Before notification icon) */}
+        <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-mono text-slate-300 topbar-datetime">
+          <Clock size={15} className="text-blue-400 shrink-0" />
+          <span className="whitespace-nowrap font-medium">{currentDateTime || "Loading..."}</span>
+        </div>
 
         {/* Notifications Dropdown Container */}
         <div className="relative" ref={notifContainerRef}>
@@ -170,9 +218,12 @@ export default function Topbar({ user, onMenuClick }) {
             onClick={() => {
               const next = !showNotifMenu;
               setShowNotifMenu(next);
-              if (next) fetchUserNotifs();
+              if (next) {
+                setShowProfileMenu(false);
+                fetchUserNotifs();
+              }
             }}
-            className="relative text-slate-300 hover:text-white p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition cursor-pointer"
+            className="relative text-slate-300 hover:text-white p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition cursor-pointer topbar-icon-btn"
             title="Notifications"
           >
             <Bell size={18} />
@@ -184,9 +235,9 @@ export default function Topbar({ user, onMenuClick }) {
           </button>
 
           {showNotifMenu && (
-            <div className="absolute right-0 mt-3 w-80 sm:w-96 rounded-2xl border border-white/10 bg-[#0f172a] shadow-2xl p-4 space-y-3 z-50 animate-fadeIn font-inter">
-              <div className="flex items-center justify-between border-b border-white/10 pb-2.5">
-                <span className="text-xs font-bold text-white flex items-center gap-2">
+            <div className="absolute right-0 mt-3 w-80 sm:w-96 rounded-2xl border border-white/10 bg-[#0f172a] shadow-2xl p-4 space-y-3 z-50 animate-fadeIn font-inter topbar-dropdown">
+              <div className="flex items-center justify-between border-b border-white/10 topbar-dropdown-hr pb-2.5">
+                <span className="text-xs font-bold text-white topbar-dropdown-text flex items-center gap-2">
                   <Bell size={14} className="text-blue-400" /> Notifications ({unreadCount} unread)
                 </span>
                 <div className="flex items-center gap-2">
@@ -198,7 +249,7 @@ export default function Topbar({ user, onMenuClick }) {
                       <CheckCheck size={12} /> Mark Read
                     </button>
                   )}
-                  <button onClick={() => setShowNotifMenu(false)} className="text-slate-400 hover:text-white p-1 cursor-pointer">
+                  <button onClick={() => setShowNotifMenu(false)} className="text-slate-400 hover:text-white p-1 cursor-pointer topbar-dropdown-text">
                     <X size={14} />
                   </button>
                 </div>
@@ -206,7 +257,7 @@ export default function Topbar({ user, onMenuClick }) {
 
               <div className="max-h-72 overflow-y-auto divide-y divide-white/5 space-y-2">
                 {notifications.length === 0 ? (
-                  <div className="p-4 text-center text-xs text-slate-400 italic">No notifications</div>
+                  <div className="p-4 text-center text-xs text-slate-400 topbar-dropdown-subtext italic">No notifications</div>
                 ) : (
                   notifications.map((n) => {
                     const typeMeta = notificationTypeMeta(n.type);
@@ -220,14 +271,14 @@ export default function Topbar({ user, onMenuClick }) {
                           }`}
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <span className="font-semibold text-white block">{n.title}</span>
+                          <span className="font-semibold text-white topbar-dropdown-text block">{n.title}</span>
                           {typeMeta && (
                             <span className={`shrink-0 text-[9px] font-semibold px-1.5 py-0.5 rounded border ${typeMeta.className}`}>
                               {typeMeta.label}
                             </span>
                           )}
                         </div>
-                        <p className="text-slate-300 text-[11px] leading-relaxed">{n.message}</p>
+                        <p className="text-slate-300 topbar-dropdown-subtext text-[11px] leading-relaxed">{n.message}</p>
                         <span className="text-[9px] text-slate-500 block font-mono">
                           {formatNotificationWhen(n.createdAt)}
                         </span>
@@ -240,37 +291,95 @@ export default function Topbar({ user, onMenuClick }) {
           )}
         </div>
 
-        {/* User Avatar & Logout */}
-        <div className="flex items-center gap-3 pl-3 border-l border-white/10">
+        {/* Theme Switcher Button (AFTER notification icon) */}
+        {/* <button
+          type="button"
+          // onClick={toggleTheme}
+          className="text-slate-300 hover:text-white p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition cursor-pointer flex items-center justify-center topbar-icon-btn"
+          title={theme === "dark" ? "Switch to White Theme" : "Switch to Dark Theme"}
+          aria-label="Toggle Theme"
+        >
+          {theme === "dark" ? (
+            <Sun size={18} className="text-amber-400" />
+          ) : (
+            <Moon size={18} className="text-blue-500" />
+          )}
+        </button> */}
 
-          <div
-            className="h-9 w-9 rounded-xl overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 flex items-center justify-center font-bold shadow-md text-[13px] cursor-pointer text-white border border-white/20 transition shrink-0"
-            onClick={handClickProfile}
+        {/* User Profile Container with Popup Dropdown */}
+        <div className="relative pl-2 sm:pl-3 border-l border-white/10" ref={profileContainerRef}>
+          <button
+            type="button"
+            onClick={() => {
+              setShowProfileMenu((prev) => !prev);
+              setShowNotifMenu(false);
+            }}
+            className="flex items-center gap-3 p-0.5 rounded-full hover:opacity-90 transition cursor-pointer focus:outline-none"
             title={user?.name || "Profile"}
           >
-            {userAvatarUrl && !avatarError ? (
-              <img
-                src={userAvatarUrl}
-                alt={user?.name || "user-profile"}
-                className="h-full w-full rounded-xl object-cover"
-                onError={() => setAvatarError(true)}
-              />
-            ) : (
-              <span className="font-semibold text-white font-inter">
-                {(user?.name || "U").charAt(0).toUpperCase()}
-              </span>
-            )}
-          </div>
-
-          <button
-            onClick={apiLogout}
-            className="text-slate-400 hover:text-red-400 p-2 rounded-xl hover:bg-red-500/10 transition cursor-pointer"
-            title="Sign Out"
-          >
-            <LogOutIcon />
+            <div className="h-9 w-9 rounded-full overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center font-bold shadow-md text-[13px] text-white border border-white/20 shrink-0">
+              {userAvatarUrl && !avatarError ? (
+                <img
+                  src={userAvatarUrl}
+                  alt={user?.name || "user-profile"}
+                  className="h-full w-full object-cover"
+                  onError={() => setAvatarError(true)}
+                />
+              ) : (
+                <span className="font-semibold text-white font-inter">
+                  {(user?.name || "U").charAt(0).toUpperCase()}
+                </span>
+              )}
+            </div>
           </button>
+
+          {/* Profile Popup */}
+          {showProfileMenu && (
+            <div className="absolute right-0 mt-3 w-64 rounded-2xl border border-white/10 bg-[#0f172a] shadow-2xl p-4 space-y-3 z-50 animate-fadeIn font-inter topbar-dropdown">
+              {/* Name & Email ID */}
+              <div className="space-y-0.5 px-1">
+                <p className="text-sm font-bold text-white truncate topbar-dropdown-text">
+                  {user?.name || "User"}
+                </p>
+                <p className="text-xs text-slate-400 truncate topbar-dropdown-subtext">
+                  {user?.email || "No email provided"}
+                </p>
+              </div>
+
+              {/* Horizontal Divider Line */}
+              <hr className="border-white/10 topbar-dropdown-hr" />
+
+              {/* Action Options: View Profile & Sign Out */}
+              <div className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    router.push("/profile");
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-200 hover:text-white hover:bg-white/10 transition cursor-pointer topbar-dropdown-item"
+                >
+                  <User size={16} className="text-blue-400 shrink-0" />
+                  <span>View Profile</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    apiLogout();
+                  }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition cursor-pointer topbar-dropdown-item"
+                >
+                  <LogOutIcon />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </header>
   );
 }
+

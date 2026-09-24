@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import formatDate from "@/app/lib/format-date";
 import { apiGetCompletedExams } from "@/app/lib/api";
 import { downloadExcel } from "@/app/lib/excel";
@@ -425,12 +426,15 @@ export default function CandidateRecordSubmodule({ refreshKey = 0 }) {
                   <tr key={exam.id} className="transition hover:bg-white/[0.04]">
                     {visibleColumns.candidateName && (
                       <td className="px-4 py-3 font-semibold text-white whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/20 text-emerald-400">
+                        <Link
+                          href={`/candidate-record/${exam.id}`}
+                          className="flex items-center gap-2 group hover:text-blue-400 transition cursor-pointer"
+                        >
+                          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-emerald-500/30 bg-emerald-500/20 text-emerald-400 group-hover:border-blue-500/40 group-hover:bg-blue-500/20 group-hover:text-blue-400 transition">
                             <User size={14} />
                           </div>
-                          <span>{exam.candidateName}</span>
-                        </div>
+                          <span className="group-hover:underline">{exam.candidateName}</span>
+                        </Link>
                       </td>
                     )}
 
@@ -531,16 +535,15 @@ export default function CandidateRecordSubmodule({ refreshKey = 0 }) {
                       </td>
                     )}
 
-                    {/* Action cell — always rendered, same as the header */}
+                    {/* Action cell — links to candidate detail page */}
                     <td className="px-4 py-3 whitespace-nowrap text-center">
-                      <button
-                        type="button"
-                        onClick={() => setViewExam(exam)}
-                        title="View details"
-                        className="inline-flex h-8 w-8 items-center justify-center text-blue-300 hover:bg-blue-500/20 transition cursor-pointer"
+                      <Link
+                        href={`/candidate-record/${exam.id}`}
+                        title="View full details"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-blue-300 hover:bg-blue-500/20 hover:text-blue-200 transition cursor-pointer"
                       >
                         <Eye size={15} />
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 ))}
