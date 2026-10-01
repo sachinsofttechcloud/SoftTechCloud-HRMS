@@ -266,9 +266,9 @@ export default function ManageUsersView() {
       )}
 
       <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden shadow-2xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-black/50 border-b border-white/10 text-slate-400 uppercase font-semibold">
+        <div className="overflow-x-auto max-w-full">
+          <table className="w-full min-w-[850px] text-left text-xs text-slate-300">
+            <thead className="bg-black/50 border-b border-white/10 text-slate-400 uppercase font-semibold whitespace-nowrap">
               <tr>
                 <th className="py-3 px-4">Full Name</th>
                 <th className="py-3 px-4">Employee ID</th>
@@ -279,7 +279,7 @@ export default function ManageUsersView() {
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-white/5 whitespace-nowrap">
               {loading ? (
                 <tr>
                   <td colSpan={7} className="py-10 text-center text-slate-500 italic">

@@ -79,9 +79,9 @@ export default function RolePermissionView() {
       )}
 
       <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden shadow-2xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
-            <thead className="bg-black/50 border-b border-white/10 text-slate-400 uppercase font-semibold">
+        <div className="overflow-x-auto max-w-full">
+          <table className="w-full min-w-[750px] text-left text-xs text-slate-300">
+            <thead className="bg-black/50 border-b border-white/10 text-slate-400 uppercase font-semibold whitespace-nowrap">
               <tr>
                 <th className="py-3 px-4">Role Name</th>
                 <th className="py-3 px-4">Description</th>

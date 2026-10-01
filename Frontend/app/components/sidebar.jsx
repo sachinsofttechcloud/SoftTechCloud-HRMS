@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -31,10 +31,21 @@ function hasModule(user, key) {
 export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCollapsed }) {
   const pathname = usePathname();
   const [showManageMenu, setShowManageMenu] = useState(false);
+  const manageMenuRef = useRef(null);
 
   useEffect(() => {
     setShowManageMenu(false);
   }, [pathname]);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (manageMenuRef.current && !manageMenuRef.current.contains(event.target)) {
+        setShowManageMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const navItems = [
     hasModule(user, "dashboard") && {
@@ -112,11 +123,11 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         className={`fixed top-0 left-0 bottom-0 z-50 bg-[#0b1120] border-r border-white/10 flex flex-col justify-between transition-all duration-300 ease-in-out lg:translate-x-0 ${isOpen ? "translate-x-0" : "-translate-x-full"
-          } ${isCollapsed ? "lg:w-22" : "lg:w-74"} w-74`}
+          } ${isCollapsed ? "lg:w-20" : "lg:w-74"} w-74`}
       >
-        <div className="overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0">
           {/* Logo & App Title Header */}
-          <div className="h-20 px-4 lg:mb-4 flex items-center justify-between relative overflow-hidden">
+          <div className="h-20 px-4 lg:mb-4 flex items-center justify-between relative overflow-hidden shrink-0">
             <Link href="/home" className="flex items-center gap-3 overflow-hidden">
               <div className="h-10 w-10 shrink-0 flex items-center justify-center font-bold shadow-md text-[14px]">
                 <img src="/login/Logo-2.png" alt="logo" className="w-full h-full" />
@@ -140,9 +151,9 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
           </div>
 
           {/* Main Navigation Menu */}
-          <div className="p-3 space-y-1.5 overflow-hidden">
+          <div className="p-3 space-y-1.5 flex-1">
             <div
-              className={`transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap px-3 ${isCollapsed ? "lg:opacity-0 lg:max-w-0 lg:mb-0 lg:h-0" : "opacity-100 max-w-full mb-2 h-auto"
+              className={`transition-all duration-300 ease-in-out overflow-hidden whitespace-nowrap px-3 h-4 mb-2 flex items-center ${isCollapsed ? "lg:opacity-0 lg:max-w-0" : "opacity-100 max-w-full"
                 }`}
             >
               <Description className="!text-[11px] font-semibold !text-slate-500 uppercase tracking-wider block">
@@ -166,16 +177,16 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
 
                 if (item.children) {
                   return (
-                    <div key={item.href} className="relative mb-2">
+                    <div key={item.href} ref={manageMenuRef} className="relative mb-2">
                       <button
                         type="button"
                         onClick={() => setShowManageMenu((open) => !open)}
                         title={isCollapsed ? item.label : undefined}
                         aria-expanded={showManageMenu}
                         aria-haspopup="menu"
-                        className={`w-full focus:outline-none focus:ring-0 flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-medium transition-all duration-300 group overflow-hidden ${isActive
-                            ? "bg-blue-500/20 border border-blue-500/20 text-white font-semibold shadow-lg shadow-blue-500/20"
-                            : "text-slate-300 hover:bg-white/5 hover:text-white"
+                        className={`w-full focus:outline-none focus:ring-0 flex items-center justify-between px-3.5 lg:px-4 py-3 rounded-xl text-xs font-medium transition-all duration-300 group ${isActive
+                          ? "bg-blue-500/20 border border-blue-500/20 text-white font-semibold shadow-lg shadow-blue-500/20"
+                          : "border border-transparent text-slate-300 hover:bg-white/5 hover:text-white"
                           }`}
                       >
                         <div className="flex items-center gap-3 overflow-hidden">
@@ -202,7 +213,7 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
                       {showManageMenu && (
                         <div
                           role="menu"
-                          className="absolute left-full top-0 ml-2 w-56 overflow-hidden rounded-xl border border-white/10 bg-[#0b1120] p-1.5 text-slate-800 shadow-2xl z-[70]"
+                          className="absolute md:left-full left-32 md:ml-4 w-56 rounded-xl md:top-0 border border-white/10 bg-[#0b1120] p-1.5 shadow-2xl z-[100]"
                         >
                           {item.children.map((child) => {
                             const ChildIcon = child.icon;
@@ -220,12 +231,18 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
                                   setIsOpen(false);
                                 }}
                                 className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-xs font-semibold transition ${childActive
-                                    ? "bg-blue-600 text-white"
-                                    : "text-slate-700 hover:bg-white/5 hover:text-white"
+                                  ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                                  : "text-slate-300 hover:bg-white/5 hover:text-white"
                                   }`}
                               >
-                                <ChildIcon className="text-slate-400 group-hover:text-white transition shrink-0" />
-                                <span className="text-[10px] sm:text-[12px] font-medium tracking-wider text-slate-300">
+                                <ChildIcon
+                                  className={
+                                    childActive
+                                      ? "text-white shrink-0"
+                                      : "text-slate-400 group-hover:text-white transition shrink-0"
+                                  }
+                                />
+                                <span className={`text-[10px] sm:text-[12px] font-medium tracking-wider ${childActive ? "text-white font-semibold" : "text-slate-300"}`}>
                                   {child.label}
                                 </span>
                               </Link>
@@ -243,9 +260,9 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
                     href={item.href}
                     onClick={() => setIsOpen(false)}
                     title={isCollapsed ? item.label : undefined}
-                    className={`mb-2 focus:outline-none focus:ring-0 focus:border-transparent flex items-center justify-between px-3.5 py-3 rounded-xl text-xs font-medium transition-all duration-300 group overflow-hidden ${isActive
-                        ? "bg-blue-500/20 border border-blue-500/20 text-white font-semibold shadow-lg shadow-blue-500/20"
-                        : "text-slate-300 hover:bg-white/5 hover:text-white"
+                    className={`w-full mb-2 focus:outline-none focus:ring-0 flex items-center justify-between px-3.5 lg:px-4 py-3 rounded-xl text-xs font-medium transition-all duration-300 group ${isActive
+                      ? "bg-blue-500/20 border border-blue-500/20 text-white font-semibold shadow-lg shadow-blue-500/20"
+                      : "border border-transparent text-slate-300 hover:bg-white/5 hover:text-white"
                       }`}
                   >
                     <div className="flex items-center gap-3 overflow-hidden">
@@ -267,8 +284,8 @@ export default function Sidebar({ user, isOpen, setIsOpen, isCollapsed, setIsCol
                     {item.badge && (
                       <span
                         className={`text-[10px] bg-blue-500/20 border border-blue-500/10 text-blue-400 px-2 py-0.5 rounded-md font-semibold whitespace-nowrap transition-all duration-300 ease-in-out overflow-hidden ${isCollapsed
-                            ? "lg:opacity-0 lg:max-w-0 lg:p-0 lg:border-0"
-                            : "opacity-100 max-w-[80px]"
+                          ? "lg:opacity-0 lg:max-w-0 lg:p-0 lg:border-0"
+                          : "opacity-100 max-w-[80px]"
                           }`}
                       >
                         {item.badge}
