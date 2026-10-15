@@ -4,12 +4,17 @@ import AuthForm from "@/app/components/auth-form";
 import { loginFields } from "@/app/data/sign-up-data";
 import { loginSchema } from "@/app/lib/validation";
 import { apiLogin } from "@/app/lib/api";
+import { toast } from "sonner";
 
 export default function LoginInForm() {
   const handleLogin = async (data) => {
-    await apiLogin({
+    const res = await apiLogin({
       email: data.email,
       password: data.password,
+    });
+    toast.success("Login successful", {
+      description: `Welcome back${res?.user?.name ? `, ${res.user.name}` : ""}!`,
+      duration: 4000,
     });
   };
 

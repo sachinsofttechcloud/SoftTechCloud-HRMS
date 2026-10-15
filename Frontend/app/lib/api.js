@@ -110,13 +110,51 @@ export function saveAuthUserToStorage(user) {
 /**
  * POST /api/auth/login
  */
-export async function apiLogin({ email, password }) {
-  const data = await fetcher("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
+// export async function apiLogin({ email, password }) {
+//   const data = await fetcher("/auth/login", {
+//     method: "POST",
+//     body: JSON.stringify({ email, password }),
+//   });
 
-  if (data.accessToken && typeof window !== "undefined") {
+//   if (data.accessToken && typeof window !== "undefined") {
+//     localStorage.setItem("accessToken", data.accessToken);
+//     localStorage.setItem("refreshToken", data.refreshToken);
+//     saveAuthUserToStorage(data.user);
+//     // Set cookie for potential middleware use
+//     document.cookie = `accessToken=${data.accessToken}; path=/; max-age=86400; SameSite=Lax`;
+//   }
+
+//   return data;
+// }
+
+export async function apiLogin({ email, password }) {
+  let data;
+
+  try {
+    data = await fetcher("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+  } catch (err) {
+    // fetch() throws a TypeError when the backend can't be reached at all
+    if (err instanceof TypeError) {
+      throw new Error(
+        "Cannot reach the server. Please make sure the backend is running."
+      );
+    }
+    // Everything else keeps the backend's message, for example:
+    //  - 401 "Invalid email or password."
+    //  - 503 "Database is not connected. Please connect the database and try again."
+    throw err;
+  }
+
+  // Never treat a response without tokens as a successful login
+  if (!data?.accessToken || !data?.refreshToken || !data?.user) {
+    throw new Error("Login failed. Please try again.");
+  }
+
+  // Store the session only after a confirmed success
+  if (typeof window !== "undefined") {
     localStorage.setItem("accessToken", data.accessToken);
     localStorage.setItem("refreshToken", data.refreshToken);
     saveAuthUserToStorage(data.user);

@@ -1,6 +1,7 @@
 import { Inter, Merriweather } from "next/font/google";
 import "./globals.css";
 import MainLayout from "./components/main-layout";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -29,10 +30,12 @@ export default function RootLayout({ children }) {
       className={`${inter.variable} ${merri.variable} h-full antialiased scroll-smooth dark`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col bg-[#020817] text-slate-100 antialiased">
+      <body className="min-h-full flex flex-col bg-[#020817] text-slate-100 antialiased scroll-smooth">
         {/* Global theme background shared by all pages */}
         <div className="global-theme-bg" aria-hidden="true" />
         <MainLayout>{children}</MainLayout>
+        {/* Toast popups: top-right corner, available on every page */}
+        <Toaster position="top-right" theme="dark" richColors closeButton />
       </body>
     </html>
   );

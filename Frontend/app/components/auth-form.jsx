@@ -7,6 +7,7 @@ import { AlertCircle } from "lucide-react";
 import InputField from "../molecules/input-filed";
 import Button from "../atoms/button";
 import Checkbox from "../atoms/checkbox";
+import { toast } from "sonner";
 
 export default function AuthForm({
   fields = [],
@@ -37,7 +38,10 @@ export default function AuthForm({
       if (redirectTo) router.push(redirectTo);
     } catch (err) {
       console.error("Form submission error:", err);
-      setServerError(err.message || "An unexpected error occurred. Please try again.");
+      const message =
+        err.message || "An unexpected error occurred. Please try again.";
+      setServerError(message);
+      toast.error(message);
     }
   };
 
