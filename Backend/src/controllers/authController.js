@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { prisma } from "../lib/prisma.js";
 import { attachUserDates, notifyEmployeeMilestones } from "../lib/employeeMilestones.js";
 import { attachUserModuleAccess } from "../lib/moduleAccess.js";
+import { isDatabaseConnectionError, DB_DOWN_MESSAGE } from "../lib/dbErrors.js";
 
 const PROFILE_SELECT = {
   id: true,
@@ -155,6 +156,12 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
+    // Database is down or unreachable: even correct credentials cannot log in
+    if (isDatabaseConnectionError(error)) {
+      console.error("Login failed, database not connected:", error.message);
+      return res.status(503).json({ error: DB_DOWN_MESSAGE });
+    }
+
     console.error("Login Error:", error);
     return res.status(500).json({ error: "Internal server error." });
   }

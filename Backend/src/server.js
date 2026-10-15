@@ -16,6 +16,12 @@ import examRoutes from "./routes/examRoutes.js";
 import leadRoutes from "./routes/leadRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import { runLeadAutomation } from "./lib/leadAutomation.js";
+import path from "path";
+import leaveRoutes from "./routes/leaveRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import accessRoutes from "./routes/accessRoutes.js";
+import prisma from "./lib/prisma.js";
+import { DB_DOWN_MESSAGE, isDatabaseConnectionError } from "./lib/dbErrors.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -44,10 +50,28 @@ app.use(
 app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 
-import path from "path";
-import leaveRoutes from "./routes/leaveRoutes.js";
-import notificationRoutes from "./routes/notificationRoutes.js";
-import accessRoutes from "./routes/accessRoutes.js";
+
+// check the database connect or not
+app.get("/api/health", async (req, res) => {
+  try {
+    await prisma.$connect();
+    res.json({ status: "ok", database: "connected" });
+  } catch {
+    res.status(503).json({ status: "error", database: "disconnected" });
+  }
+});
+
+//global error handler of database connect or not
+app.use((err, req, res, next) => {
+  if (isDatabaseConnectionError(err)) {
+    return res.status(503).json({ error: DB_DOWN_MESSAGE });
+  }
+
+  console.error("Unhandled Error:", err);
+  res.status(err.status || 500).json({
+    error: err.message || "Internal server error",
+  });
+});
 
 // Static files directory for uploads
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
@@ -82,9 +106,6 @@ app.listen(PORT, () => {
   console.log(`🔐 Auth API:    http://localhost:${PORT}/api/auth`);
   console.log(`👥 HR API:      http://localhost:${PORT}/api/hr`);
   console.log(`=========================================`);
-  grantDefaultsToExistingUsers().catch((err) =>
-    console.warn("Default module access:", err.message)
-  );
   notifyEmployeeMilestones().catch((err) => console.warn("Milestone notify:", err.message));
   sendDueExamReminders().catch((err) => console.warn("Exam SMS reminder:", err.message));
   runLeadAutomation().catch((err) => console.warn("Lead automation:", err.message));
