@@ -550,12 +550,55 @@ export async function apiGetActiveExams() {
   return await fetcher("/exams/active-exams", { method: "GET" });
 }
 
-export async function apiGetPastExams() {
-  return await fetcher("/exams/past-exams", { method: "GET" });
+export async function apiGetTodayExams() {
+  return await fetcher("/exams/today-exams", { method: "GET" });
+}
+
+export async function apiGetPendingPaymentExams() {
+  return await fetcher("/exams/pending-payment", { method: "GET" });
+}
+
+export async function apiGetCaseRaiseExams() {
+  return await fetcher("/exams/case-raise-exams", { method: "GET" });
+}
+
+export async function apiGetPastExams(params = {}) {
+  const searchParams = new URLSearchParams();
+  if (params.filterDate) searchParams.append("filterDate", params.filterDate);
+  if (params.startDate) searchParams.append("startDate", params.startDate);
+  if (params.endDate) searchParams.append("endDate", params.endDate);
+  const query = searchParams.toString();
+  return await fetcher(`/exams/past-exams${query ? `?${query}` : ""}`, { method: "GET" });
 }
 
 export async function apiGetCompletedExams() {
   return await fetcher("/exams/completed-exams", { method: "GET" });
+}
+
+export async function apiGetExamCatalog({ search = "", technology = "" } = {}) {
+  const params = new URLSearchParams();
+  if (search) params.append("search", search);
+  if (technology) params.append("technology", technology);
+  const q = params.toString();
+  return await fetcher(`/exams/catalog${q ? `?${q}` : ""}`, { method: "GET" });
+}
+
+export async function apiCreateExamCatalogItem(payload) {
+  return await fetcher("/exams/catalog", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiUpdateExamCatalogItem(id, payload) {
+  return await fetcher(`/exams/catalog/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiDeleteExamCatalogItem(id) {
+  return await fetcher(`/exams/catalog/${id}`, { method: "DELETE" });
 }
 
 export async function apiGetExamById(id) {
@@ -594,6 +637,26 @@ export async function apiRescheduleExam(id, payload) {
   return await fetcher(`/exams/${id}/reschedule`, {
     method: "PATCH",
     body: JSON.stringify(payload),
+  });
+}
+
+export async function apiCompleteExam(id, paymentStatus = "COMPLETED") {
+  return await fetcher(`/exams/${id}/complete`, {
+    method: "PATCH",
+    body: JSON.stringify({ paymentStatus }),
+  });
+}
+
+export async function apiCaseRaiseExam(id, payload) {
+  return await fetcher(`/exams/${id}/case-raise`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiLookupCandidate(mobile) {
+  return await fetcher(`/exams/candidate-lookup?mobile=${encodeURIComponent(mobile)}`, {
+    method: "GET",
   });
 }
 

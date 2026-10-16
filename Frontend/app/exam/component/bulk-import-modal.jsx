@@ -6,6 +6,7 @@ import {
   Check,
   CloudUpload,
   Download,
+  FileSpreadsheet,
   Loader2,
   Upload,
   X,
@@ -44,8 +45,8 @@ export default function BulkImportModal({ onClose, onImported }) {
   const acceptFile = (nextFile) => {
     if (!nextFile) return;
     const name = nextFile.name.toLowerCase();
-    if (!name.endsWith(".xlsx") && !name.endsWith(".xls")) {
-      setError("Only Excel .xlsx and .xls files are supported.");
+    if (!name.endsWith(".xlsx") && !name.endsWith(".xls") && !name.endsWith(".csv")) {
+      setError("Only Excel .csv, .xlsx and .xls files are supported.");
       return;
     }
     setError("");
@@ -67,7 +68,9 @@ export default function BulkImportModal({ onClose, onImported }) {
         return;
       }
       if (rows.length > MAX_ROWS) {
-        setError(`Files larger than ${MAX_ROWS.toLocaleString()} rows aren't supported yet — split your file and import in batches.`);
+        setError(
+          `Files larger than ${MAX_ROWS.toLocaleString()} rows aren't supported yet — split your file and import in batches.`
+        );
         return;
       }
 
@@ -75,6 +78,7 @@ export default function BulkImportModal({ onClose, onImported }) {
         fileName: file.name,
         rows,
       });
+
       setReview({
         fileName: preview.fileName || file.name,
         total: preview.total || rows.length,
@@ -91,7 +95,7 @@ export default function BulkImportModal({ onClose, onImported }) {
   };
 
   const handleConfirm = async () => {
-    if (!review.ready.length) return;
+    if (!review.ready.length || review.duplicates.length > 0) return;
 
     setLoading(true);
     setError("");
@@ -106,59 +110,150 @@ export default function BulkImportModal({ onClose, onImported }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-3xl overflow-hidden rounded-3xl bg-white shadow-2xl">
-        <div className="flex items-center justify-between bg-[#171717] px-5 py-4 text-white">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md animate-fadeIn"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="relative flex w-full max-w-2xl flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#0b1324] shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-white/10 bg-slate-900/60 px-6 py-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400 text-black">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-400">
               <Upload size={18} />
             </div>
-            <h2 className="text-lg font-semibold">Import Candidates</h2>
+            <div>
+              <h2 className="text-base font-bold tracking-tight text-white">
+                Add Candidates in Bulk
+              </h2>
+            </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded-full p-1.5 text-slate-300 hover:bg-white/10 hover:text-white">
-            <X size={18} />
+          <button
+            type="button"
+            onClick={onClose}
+            className="cursor-pointer rounded-lg border border-white/10 bg-white/5 p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white"
+          >
+            <X size={16} />
           </button>
         </div>
 
-        <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
-          <StepBadge active={step === 1} done={step > 1} label="Upload File" number={1} />
-          <div className={`h-px flex-1 ${step > 1 ? "bg-emerald-500" : "bg-slate-200"}`} />
-          <StepBadge active={step === 2} done={false} label="Review & Import" number={2} />
+        {/* Stepper Bar */}
+        <div className="flex items-center gap-3 border-b border-white/10 bg-[#0f172a]/60 px-6 py-3.5">
+          {/* Step 1 badge */}
+          <div className="flex items-center gap-2">
+            <span
+              className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                step > 1
+                  ? "bg-emerald-500 text-white"
+                  : "bg-amber-400 text-slate-950"
+              }`}
+            >
+              {step > 1 ? <Check size={14} /> : "1"}
+            </span>
+            <span
+              className={`text-xs font-semibold ${
+                step > 1
+                  ? "text-emerald-400"
+                  : step === 1
+                  ? "text-white"
+                  : "text-slate-400"
+              }`}
+            >
+              Upload File
+            </span>
+          </div>
+
+          {/* Stepper Connector line */}
+          <div
+            className={`h-0.5 flex-1 transition-colors ${
+              step > 1 ? "bg-emerald-500" : "bg-white/10"
+            }`}
+          />
+
+          {/* Step 2 badge */}
+          <div className="flex items-center gap-2">
+            <span
+              className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                step === 2
+                  ? "bg-amber-400 text-slate-950"
+                  : "bg-white/10 text-slate-400"
+              }`}
+            >
+              2
+            </span>
+            <span
+              className={`text-xs font-semibold ${
+                step === 2 ? "text-white" : "text-slate-500"
+              }`}
+            >
+              Review &amp; Import
+            </span>
+          </div>
         </div>
 
-        <div className="max-h-[70vh] overflow-y-auto px-6 py-5">
+        {/* Modal Body */}
+        <div className="max-h-[72vh] overflow-y-auto p-6 space-y-4">
           {error ? (
-            <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-600">
+            <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-xs text-rose-300">
               {error}
             </div>
           ) : null}
 
           {step === 1 ? (
-            <div className="space-y-5">
+            /* STEP 1: Upload File */
+            <div className="space-y-4">
               <div>
-                <h3 className="text-base font-semibold text-slate-900">Three steps to a clean import</h3>
-                <button
-                  type="button"
-                  onClick={downloadExamTemplate}
-                  className="mt-2 inline-flex items-center gap-2 text-sm font-semibold text-amber-700 hover:text-amber-800"
-                >
-                  <Download size={15} />
-                  Download the template
-                </button>
-                <p className="mt-0.5 text-sm text-slate-500">a ready-made file with the columns we recognize</p>
-                <p className="mt-2 text-sm font-medium text-slate-800">Fill it in</p>
-                <p className="text-sm text-slate-500">replace the sample rows with your candidates&apos; details</p>
-                <p className="mt-2 text-sm font-medium text-slate-800">Upload it below</p>
-                <p className="text-sm text-slate-500">we&apos;ll show you exactly what will happen before anything is created</p>
+                <h3 className="text-sm font-bold text-white">
+                  Three steps to a clean import
+                </h3>
+
+                {/* Step 1: Download Template */}
+                <div className="mt-2.5">
+                  <button
+                    type="button"
+                    onClick={downloadExamTemplate}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-400 hover:text-amber-300 transition cursor-pointer"
+                  >
+                    <Download size={14} />
+                    Download the template
+                  </button>
+                  <p className="mt-0.5 text-[11px] text-slate-400">
+                    a ready-made file with the columns we recognize
+                  </p>
+                </div>
+
+                {/* Step 2: Fill it in */}
+                <div className="mt-2.5">
+                  <p className="text-xs font-semibold text-white">Fill it in</p>
+                  <p className="text-[11px] text-slate-400">
+                    replace the sample row with your candidates&apos; details
+                  </p>
+                </div>
+
+                {/* Step 3: Upload it below */}
+                <div className="mt-2.5">
+                  <p className="text-xs font-semibold text-white">
+                    Upload it below
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    we&apos;ll show you exactly what will happen before anything is created
+                  </p>
+                </div>
               </div>
 
-              <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                <span className="mr-2 inline-flex align-middle text-amber-600">
-                  <AlertTriangle size={16} />
+              {/* Warning Banner */}
+              <div className="flex items-start gap-2.5 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-300">
+                <AlertTriangle size={15} className="shrink-0 mt-0.5 text-amber-400" />
+                <span>
+                  Files larger than 100,000 rows aren&apos;t supported yet — split your file and import in batches.
                 </span>
-                Files larger than 100,000 rows aren&apos;t supported yet — split your file and import in batches.
               </div>
 
+              {/* Drag and Drop Zone */}
               <div
                 onDragOver={(event) => {
                   event.preventDefault();
@@ -170,181 +265,217 @@ export default function BulkImportModal({ onClose, onImported }) {
                   setDragOver(false);
                   acceptFile(event.dataTransfer.files?.[0]);
                 }}
-                className={`flex min-h-[140px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 text-center transition ${
-                  dragOver ? "border-amber-500 bg-amber-50" : "border-slate-200 bg-slate-50"
-                }`}
                 onClick={() => fileInputRef.current?.click()}
+                className={`flex min-h-[145px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition ${
+                  dragOver
+                    ? "border-amber-400 bg-amber-500/10"
+                    : "border-white/15 bg-white/5 hover:border-amber-500/40 hover:bg-white/[0.07]"
+                }`}
               >
-                <CloudUpload className="mb-3 text-slate-400" size={32} />
-                <p className="text-sm font-medium text-slate-700">
-                  Drag and drop or <span className="text-amber-700">choose a file</span>
+                <CloudUpload className="mb-2 text-amber-400" size={32} />
+                <p className="text-xs font-medium text-slate-300">
+                  Drag and drop or{" "}
+                  <span className="text-amber-400 font-semibold underline underline-offset-2">
+                    choose a file
+                  </span>
                 </p>
-                <p className="mt-1 text-xs text-slate-500">Upload the completed Excel template (.xlsx or .xls)</p>
-                {file ? <p className="mt-3 text-sm font-semibold text-slate-800">{file.name}</p> : null}
+                <p className="mt-1 text-[11px] text-slate-500">
+                  .csv, .xlsx and .xls files are all fine
+                </p>
+
+                {file ? (
+                  <div className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-semibold text-emerald-300">
+                    <FileSpreadsheet size={15} />
+                    <span>{file.name}</span>
+                    <span className="text-[10px] text-emerald-400/80 font-normal">
+                      ({(file.size / 1024).toFixed(1)} KB)
+                    </span>
+                  </div>
+                ) : null}
+
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                  accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
                   className="hidden"
                   onChange={(event) => acceptFile(event.target.files?.[0])}
                 />
               </div>
             </div>
           ) : (
-            <div className="space-y-5">
-              <div className="grid gap-3 sm:grid-cols-3">
-                <StatCard count={review.ready.length} label="Ready to import" tone="ready" />
-                <StatCard count={review.duplicates.length} label="Duplicates" tone="duplicate" />
-                <StatCard count={review.invalid.length} label="Invalid rows" tone="invalid" />
+            /* STEP 2: Review & Import */
+            <div className="space-y-4">
+              {/* Top 3 Summary Cards */}
+              <div className="grid grid-cols-3 gap-3">
+                {/* Ready to Import */}
+                <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-3.5 text-center">
+                  <p className="text-2xl sm:text-3xl font-extrabold text-emerald-400">
+                    {review.ready.length}
+                  </p>
+                  <p className="mt-1 text-[11px] sm:text-xs font-semibold text-emerald-300">
+                    Ready to import
+                  </p>
+                </div>
+
+                {/* Duplicates */}
+                <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-center">
+                  <p className="text-2xl sm:text-3xl font-extrabold text-amber-400">
+                    {review.duplicates.length}
+                  </p>
+                  <p className="mt-1 text-[11px] sm:text-xs font-semibold text-amber-300">
+                    Duplicates
+                  </p>
+                </div>
+
+                {/* Invalid rows */}
+                <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-3.5 text-center">
+                  <p className="text-2xl sm:text-3xl font-extrabold text-rose-400">
+                    {review.invalid.length}
+                  </p>
+                  <p className="mt-1 text-[11px] sm:text-xs font-semibold text-rose-300">
+                    Invalid rows
+                  </p>
+                </div>
               </div>
 
-              <p className="text-sm text-slate-600">
-                {review.total} row(s) found in <span className="font-semibold text-slate-900">{review.fileName}</span>.
-                {review.ready.length
-                  ? " Review any issues below, then confirm the import."
-                  : " No rows are ready to import; fix the issues below and re-upload."}
+              {/* Subtext info */}
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {review.total} row(s) found in{" "}
+                <span className="font-semibold text-white">{review.fileName}</span>.{" "}
+                {review.duplicates.length > 0 || review.invalid.length > 0
+                  ? "Fix duplicate or invalid rows below and re-upload."
+                  : "All rows are ready to import."}
               </p>
 
-              {review.ready.length ? (
-                <div className="overflow-x-auto rounded-xl border border-slate-200">
-                  <table className="w-full min-w-[760px] text-left text-xs">
-                    <thead className="bg-slate-50 font-semibold uppercase tracking-wide text-slate-500">
-                      <tr>
-                        <th className="px-3 py-2">Full name</th>
-                        <th className="px-3 py-2">Technology</th>
-                        <th className="px-3 py-2">Exam</th>
-                        <th className="px-3 py-2">Mobile</th>
-                        <th className="px-3 py-2">Schedule</th>
-                        <th className="px-3 py-2">Voucher / Assist</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {review.ready.slice(0, 20).map((row) => (
-                        <tr key={`${row.row}-${row.mobileNo}`} className="border-t border-slate-100 text-slate-700">
-                          <td className="px-3 py-2">{row.candidateName}</td>
-                          <td className="px-3 py-2">{row.technology}</td>
-                          <td className="px-3 py-2">{row.examName}</td>
-                          <td className="px-3 py-2">{row.mobileNo}</td>
-                          <td className="px-3 py-2">{row.examDate} {row.examTime}</td>
-                          <td className="px-3 py-2">
-                            Voucher: {row.voucher ? "True" : "False"} / Assist: {row.assistSupport ? "True" : "False"}
-                          </td>
+              {/* Issues Table (Duplicates / Invalid rows) */}
+              {issueRows.length > 0 ? (
+                <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0f172a]">
+                  <div className="max-h-56 overflow-y-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="sticky top-0 border-b border-white/10 bg-slate-900 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <tr>
+                          <th className="px-3.5 py-2.5 w-16">Row</th>
+                          <th className="px-3.5 py-2.5">Candidate</th>
+                          <th className="px-3.5 py-2.5">Issue</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {review.ready.length > 20 ? (
-                    <p className="border-t border-slate-100 px-3 py-2 text-xs text-slate-500">
-                      Showing 20 of {review.ready.length} ready rows.
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {issueRows.map((row, idx) => (
+                          <tr key={`${row.row}-${row.issue}-${idx}`} className="hover:bg-white/5">
+                            <td className="px-3.5 py-2 text-slate-400 font-mono">
+                              {row.row}
+                            </td>
+                            <td className="px-3.5 py-2 font-medium text-white">
+                              {row.candidateName || "—"}
+                            </td>
+                            <td className="px-3.5 py-2 font-medium text-amber-400">
+                              {row.issue}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Ready Rows Preview Table (if no issues or ready rows) */}
+              {review.ready.length > 0 && review.duplicates.length === 0 ? (
+                <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0f172a]">
+                  <div className="max-h-56 overflow-y-auto">
+                    <table className="w-full min-w-[580px] text-left text-xs">
+                      <thead className="sticky top-0 border-b border-white/10 bg-slate-900 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        <tr>
+                          <th className="px-3 py-2.5">Full Name</th>
+                          <th className="px-3 py-2.5">Technology</th>
+                          <th className="px-3 py-2.5">Exam Name</th>
+                          <th className="px-3 py-2.5">Mobile</th>
+                          <th className="px-3 py-2.5">Schedule</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {review.ready.slice(0, 15).map((row, i) => (
+                          <tr key={`${row.row}-${i}`} className="hover:bg-white/5">
+                            <td className="px-3 py-2 font-medium text-white">
+                              {row.candidateName}
+                            </td>
+                            <td className="px-3 py-2 text-slate-300">
+                              {row.technology}
+                            </td>
+                            <td className="px-3 py-2 text-slate-300">
+                              {row.examName}
+                            </td>
+                            <td className="px-3 py-2 text-slate-300 font-mono">
+                              {row.mobileNo}
+                            </td>
+                            <td className="px-3 py-2 text-slate-300">
+                              {row.examDate} {row.examTime}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {review.ready.length > 15 ? (
+                    <p className="border-t border-white/10 px-3.5 py-1.5 text-[11px] text-slate-500">
+                      Showing 15 of {review.ready.length} ready rows.
                     </p>
                   ) : null}
                 </div>
               ) : null}
-
-              {issueRows.length ? (
-                <div className="overflow-hidden rounded-xl border border-slate-200">
-                  <table className="w-full text-left text-sm">
-                    <thead className="bg-slate-50 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                      <tr>
-                        <th className="px-4 py-3">Row</th>
-                        <th className="px-4 py-3">Full name</th>
-                        <th className="px-4 py-3">Issue</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {issueRows.map((row) => (
-                        <tr key={`${row.row}-${row.issue}`} className="border-t border-slate-100">
-                          <td className="px-4 py-3 text-slate-500">{row.row}</td>
-                          <td className="px-4 py-3 text-slate-800">{row.candidateName || "—"}</td>
-                          <td className="px-4 py-3 text-slate-600">{row.issue}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-                  All {review.ready.length} row(s) are ready to import.
-                </p>
-              )}
             </div>
           )}
         </div>
 
-        <div className="flex items-center justify-between border-t border-slate-100 px-6 py-4">
+        {/* Modal Footer */}
+        <div className="flex items-center justify-between border-t border-white/10 bg-slate-950/40 px-6 py-4">
           {step === 1 ? (
-            <button type="button" onClick={onClose} className="text-sm font-medium text-slate-500 hover:text-slate-800">
+            <button
+              type="button"
+              onClick={onClose}
+              className="cursor-pointer rounded-xl border border-white/10 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/5"
+            >
               Cancel
             </button>
           ) : (
             <button
               type="button"
               onClick={reset}
-              className="text-sm font-medium text-slate-500 hover:text-slate-800"
+              className="cursor-pointer rounded-xl border border-white/10 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/5"
             >
               Back
             </button>
           )}
 
           {step === 1 ? (
-            <button
-              type="button"
-              onClick={handleProceed}
-              disabled={loading}
-              className="inline-flex items-center gap-2 rounded-xl bg-slate-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-900 disabled:opacity-50"
-            >
-              {loading ? <Loader2 size={15} className="animate-spin" /> : null}
-              Proceed
-            </button>
+            /* Proceed button: VISIBLE ONLY WHEN FILE IS SELECTED */
+            file ? (
+              <button
+                type="button"
+                onClick={handleProceed}
+                disabled={loading}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-amber-400 px-5 py-2 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition hover:bg-amber-300 disabled:opacity-50"
+              >
+                {loading ? <Loader2 size={14} className="animate-spin" /> : null}
+                Proceed
+              </button>
+            ) : null
           ) : (
-            <button
-              type="button"
-              onClick={handleConfirm}
-              disabled={loading || !review.ready.length}
-              className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-semibold text-slate-900 hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading ? <Loader2 size={15} className="animate-spin" /> : null}
-              Confirm Import
-            </button>
+            /* Confirm Import button: HIDDEN IF DUPLICATES EXIST */
+            review.duplicates.length === 0 && review.ready.length > 0 ? (
+              <button
+                type="button"
+                onClick={handleConfirm}
+                disabled={loading}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-amber-400 px-5 py-2 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition hover:bg-amber-300 disabled:opacity-50"
+              >
+                {loading ? <Loader2 size={14} className="animate-spin" /> : null}
+                Confirm Import
+              </button>
+            ) : null
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function StepBadge({ active, done, label, number }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span
-        className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-          done
-            ? "bg-emerald-500 text-white"
-            : active
-              ? "bg-amber-400 text-slate-900"
-              : "bg-slate-200 text-slate-500"
-        }`}
-      >
-        {done ? <Check size={14} /> : number}
-      </span>
-      <span className={`text-sm font-medium ${active || done ? "text-slate-900" : "text-slate-400"}`}>
-        {label}
-      </span>
-    </div>
-  );
-}
-
-function StatCard({ count, label, tone }) {
-  const tones = {
-    ready: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    duplicate: "border-amber-200 bg-amber-50 text-amber-700",
-    invalid: "border-rose-200 bg-rose-50 text-rose-700",
-  };
-
-  return (
-    <div className={`rounded-2xl border px-4 py-5 text-center ${tones[tone]}`}>
-      <p className="text-3xl font-bold">{count}</p>
-      <p className="mt-1 text-sm font-medium">{label}</p>
     </div>
   );
 }

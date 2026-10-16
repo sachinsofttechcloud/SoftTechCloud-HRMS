@@ -25,12 +25,65 @@ const ATTENDANCE_HEADER_MAP = {
   remark: "remarks",
 };
 
-export function downloadExcel(fileName, rows, sheetName = "Attendance") {
+export function downloadExcel(fileName, rows, sheetName = "Data") {
+  if (!rows || !rows.length) return;
+
   const worksheet = XLSX.utils.json_to_sheet(rows);
+
+  // Auto-fit column widths based on maximum content/header length
+  const keys = Object.keys(rows[0] || {});
+  worksheet["!cols"] = keys.map((key) => {
+    let maxLen = String(key || "").length;
+    for (let i = 0; i < Math.min(rows.length, 500); i++) {
+      const val = rows[i]?.[key];
+      const len = val != null ? String(val).length : 0;
+      if (len > maxLen) maxLen = len;
+    }
+    return { wch: Math.min(Math.max(maxLen + 4, 12), 42) };
+  });
+
+  // Set header row height
+  worksheet["!rows"] = [{ hpt: 26, hpx: 26 }];
+
+  // Style header cells (row 0: A1, B1, ...) with blue background & bold white text
+  const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
+  for (let C = range.s.c; C <= range.e.c; ++C) {
+    const cellAddress = XLSX.utils.encode_cell({ r: 0, c: C });
+    if (!worksheet[cellAddress]) continue;
+
+    worksheet[cellAddress].s = {
+      fill: {
+        patternType: "solid",
+        fgColor: { rgb: "1E40AF" }, // Deep Royal Blue
+        bgColor: { rgb: "1E40AF" },
+      },
+      font: {
+        name: "Calibri",
+        sz: 11,
+        bold: true,
+        color: { rgb: "FFFFFF" },
+      },
+      alignment: {
+        vertical: "center",
+        horizontal: "center",
+        wrapText: true,
+      },
+      border: {
+        top: { style: "thin", color: { rgb: "3B82F6" } },
+        bottom: { style: "medium", color: { rgb: "1D4ED8" } },
+        left: { style: "thin", color: { rgb: "3B82F6" } },
+        right: { style: "thin", color: { rgb: "3B82F6" } },
+      },
+    };
+  }
+
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName.slice(0, 31));
-  const name = fileName.endsWith(".xlsx") ? fileName : `${fileName}.xlsx`;
-  XLSX.writeFile(workbook, name);
+
+  // Ensure file is saved as .xlsx to support cell formatting
+  const baseName = fileName.replace(/\.csv$/i, ".xlsx");
+  const name = baseName.endsWith(".xlsx") ? baseName : `${baseName}.xlsx`;
+  XLSX.writeFile(workbook, name, { cellStyles: true });
 }
 
 export function excelDateToYmd(value) {
@@ -136,24 +189,13 @@ export function downloadExamTemplate() {
     {
       "Full Name": "John Doe",
       Technology: "AWS",
-      "Exam Name": "AWS Certified",
+      "Exam Name": "AWS Certified Solutions Architect",
       "Mobile No": "+91 98765 43210",
       "Exam Date": ymd,
       "Start Time": "10:00 Am",
       "End Time": "12:00 Pm",
       Voucher: "No",
       "Assist Support": "True",
-    },
-    {
-      "Full Name": "Jane Smith",
-      Technology: "Salesforce",
-      "Exam Name": "Salesforce Admin",
-      "Mobile No": "+91 98765 43211",
-      "Exam Date": ymd,
-      "Start Time": "02:00 Pm",
-      "End Time": "04:00 Pm",
-      Voucher: "Yes",
-      "Assist Support": "False",
     },
   ];
   downloadExcel("exam-candidate-template.xlsx", rows, "Candidates");

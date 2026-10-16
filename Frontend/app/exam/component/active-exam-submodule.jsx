@@ -1,15 +1,7 @@
-import { apiGetActiveExams } from "@/app/lib/api";
-import ExamListSubmodule from "./exam-list-submodule";
+"use client";
 
-export default function ActiveExamSubmodule({ refreshKey = 0 }) {
-  return (
-    <ExamListSubmodule
-      fetchExams={apiGetActiveExams}
-      emptyMessage="No active exams today."
-      defaultStatus="ONGOING"
-      refreshKey={refreshKey}
-      interactive
-      showPaymentStatus
-    />
-  );
+import TodayExamSubmodule from "./today-exam-submodule";
+
+export default function ActiveExamSubmodule(props) {
+  return <TodayExamSubmodule {...props} />;
 }

@@ -14,9 +14,28 @@ import { apiLogout } from "@/app/lib/api";
 import Button from "../atoms/button";
 
 import { useState, useEffect, useRef } from "react";
-import { Bell, CheckCheck, X, User, Clock, Sun, Moon } from "lucide-react";
+import { Bell, CheckCheck, X, User, Clock, Sun, Moon, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { apiGetNotifications, apiMarkAllNotificationsRead, apiMarkNotificationRead } from "@/app/lib/api";
 import { getMediaUrl } from "@/app/lib/utils";
+
+function getCalendarDays(year, month) {
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const prevMonthDays = new Date(year, month, 0).getDate();
+
+  const days = [];
+  for (let i = firstDayIndex - 1; i >= 0; i--) {
+    days.push({ day: prevMonthDays - i, currentMonth: false });
+  }
+  for (let i = 1; i <= daysInMonth; i++) {
+    days.push({ day: i, currentMonth: true });
+  }
+  const remaining = (7 - (days.length % 7)) % 7;
+  for (let i = 1; i <= remaining; i++) {
+    days.push({ day: i, currentMonth: false });
+  }
+  return days;
+}
 
 function notificationTypeMeta(type) {
   if (type === "WORK_ANNIVERSARY") {
@@ -50,10 +69,13 @@ export default function Topbar({ user, onMenuClick }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [avatarError, setAvatarError] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState("");
   const [theme, setTheme] = useState("dark");
 
+  const calendarContainerRef = useRef(null);
   const notifContainerRef = useRef(null);
   const profileContainerRef = useRef(null);
 
@@ -118,6 +140,9 @@ export default function Topbar({ user, onMenuClick }) {
   // Close menus on outside click
   useEffect(() => {
     function handleClickOutside(event) {
+      if (calendarContainerRef.current && !calendarContainerRef.current.contains(event.target)) {
+        setShowCalendar(false);
+      }
       if (notifContainerRef.current && !notifContainerRef.current.contains(event.target)) {
         setShowNotifMenu(false);
       }
@@ -185,7 +210,7 @@ export default function Topbar({ user, onMenuClick }) {
   };
 
   return (
-    <header className="h-20 md:h-25 bg-[#0b1120]/80 backdrop-blur-xl border-b border-white/10 sticky top-0 z-30 px-5 sm:px-18 flex items-center justify-between transition-colors duration-300">
+    <header className="h-20 md:h-20 bg-[#0b1120]/80 backdrop-blur-xl border-b border-white/10 sticky top-0 z-30 px-5 sm:px-18 flex items-center justify-between transition-colors duration-300">
       {/* Left side: Hamburger menu + Page Title */}
       <div className="flex items-center gap-4">
         <button
@@ -205,10 +230,112 @@ export default function Topbar({ user, onMenuClick }) {
 
       {/* Right side: Actions, Date/Time, Notifs, Theme, & User Profile */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Live Date, Month, Year & Time display (Before notification icon) */}
-        <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-mono text-slate-300 topbar-datetime">
-          <Clock size={15} className="text-blue-400 shrink-0" />
-          <span className="whitespace-nowrap font-medium">{currentDateTime || "Loading..."}</span>
+        {/* Live Date, Month, Year & Time display with Interactive Calendar Dropdown */}
+        <div className="relative" ref={calendarContainerRef}>
+          <button
+            type="button"
+            onClick={() => {
+              setShowCalendar((prev) => !prev);
+              setShowNotifMenu(false);
+              setShowProfileMenu(false);
+            }}
+            className="hidden sm:flex items-center gap-2.5 px-3.5 py-2 rounded-xl text-xs md:text-[13px] font-sans font-medium text-slate-200 hover:bg-white/10 border border-white/10 hover:border-blue-500/40 transition-all cursor-pointer shadow-sm select-none topbar-datetime group"
+            title="Click to open calendar"
+          >
+            <Clock size={15} className="text-blue-400 shrink-0 group-hover:text-blue-300 transition-colors" />
+            <span className="whitespace-nowrap font-medium tracking-wide">{currentDateTime || "Loading..."}</span>
+          </button>
+
+          {showCalendar && (
+            <div className="absolute right-0 mt-3 w-72 sm:w-80 rounded-2xl border border-white/10 bg-[#0f172a] shadow-2xl p-4 space-y-3 z-50 animate-fadeIn font-inter topbar-dropdown">
+              {/* Header with Month/Year and navigation */}
+              <div className="flex items-center justify-between border-b border-white/10 topbar-dropdown-hr pb-3">
+                <span className="text-xs sm:text-sm font-bold text-white topbar-dropdown-text flex items-center gap-2">
+                  <CalendarIcon size={15} className="text-blue-400" />
+                  {calendarMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const prev = new Date(calendarMonth);
+                      prev.setMonth(prev.getMonth() - 1);
+                      setCalendarMonth(prev);
+                    }}
+                    className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                    title="Previous month"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCalendarMonth(new Date())}
+                    className="px-2 py-0.5 rounded-md text-[11px] font-semibold text-blue-400 hover:bg-blue-500/10 transition cursor-pointer"
+                    title="Jump to today"
+                  >
+                    Today
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = new Date(calendarMonth);
+                      next.setMonth(next.getMonth() + 1);
+                      setCalendarMonth(next);
+                    }}
+                    className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                    title="Next month"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Day of week headers */}
+              <div className="grid grid-cols-7 text-center text-[11px] font-semibold text-slate-400">
+                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+                  <span key={d} className="py-1">
+                    {d}
+                  </span>
+                ))}
+              </div>
+
+              {/* Calendar Grid */}
+              <div className="grid grid-cols-7 gap-1 text-center">
+                {getCalendarDays(calendarMonth.getFullYear(), calendarMonth.getMonth()).map((item, idx) => {
+                  const today = new Date();
+                  const isToday =
+                    item.currentMonth &&
+                    item.day === today.getDate() &&
+                    calendarMonth.getMonth() === today.getMonth() &&
+                    calendarMonth.getFullYear() === today.getFullYear();
+
+                  return (
+                    <div
+                      key={idx}
+                      className={`h-8 w-8 mx-auto flex items-center justify-center text-xs rounded-xl font-medium transition-all ${isToday
+                        ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white font-bold ring-2 ring-blue-400 shadow-md shadow-blue-500/40"
+                        : item.currentMonth
+                          ? "text-slate-200 hover:bg-white/10"
+                          : "text-slate-600"
+                        }`}
+                    >
+                      {item.day}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Footer info showing today's date and live time */}
+              <div className="border-t border-white/10 topbar-dropdown-hr pt-2.5 flex items-center justify-between text-[11px] text-slate-400">
+                <span className="text-blue-300 font-medium">
+                  {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+                </span>
+                <span className="font-mono text-slate-400">
+                  {new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Notifications Dropdown Container */}

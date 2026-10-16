@@ -5,6 +5,8 @@ import Link from "next/link";
 import formatDate from "@/app/lib/format-date";
 import { apiGetCompletedExams } from "@/app/lib/api";
 import { downloadExcel } from "@/app/lib/excel";
+import ExportModal from "@/app/molecules/export-modal";
+import ColumnSelectorDropdown from "@/app/molecules/column-selector-dropdown";
 import {
   Award,
   Building2,
@@ -30,6 +32,7 @@ import {
 } from "lucide-react";
 
 import DetailRow from "@/app/atoms/details-row";
+import { useRouter } from "next/navigation";
 
 const EMPTY_FILTERS = {
   candidateName: "",
@@ -66,11 +69,12 @@ export default function CandidateRecordSubmodule({ refreshKey = 0 }) {
   const [appliedFilters, setAppliedFilters] = useState(EMPTY_FILTERS);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const [showColumnDropdown, setShowColumnDropdown] = useState(false);
-  const columnDropdownRef = useRef(null);
+
+  const router = useRouter();
 
   // Which candidate's full record is open in the view-details modal.
   const [viewExam, setViewExam] = useState(null);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   const [visibleColumns, setVisibleColumns] = useState(() => {
     const initial = {};
@@ -106,15 +110,7 @@ export default function CandidateRecordSubmodule({ refreshKey = 0 }) {
     return () => clearTimeout(timeoutId);
   }, [filters]);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (columnDropdownRef.current && !columnDropdownRef.current.contains(event.target)) {
-        setShowColumnDropdown(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+
 
   const filteredExams = useMemo(() => {
     const candidate = appliedFilters.candidateName.trim().toLowerCase();
@@ -168,17 +164,24 @@ export default function CandidateRecordSubmodule({ refreshKey = 0 }) {
   };
 
   const handleExport = () => {
-    const activeCols = ALL_COLUMNS.filter((col) => visibleColumns[col.id]);
+    setShowExportModal(true);
+  };
+
+  const handleConfirmExport = (exportMode) => {
+    const colsToExport =
+      exportMode === "all"
+        ? ALL_COLUMNS
+        : ALL_COLUMNS.filter((col) => visibleColumns[col.id]);
 
     downloadExcel(
       `candidate-records-${new Date().toISOString().slice(0, 10)}.xlsx`,
       filteredExams.map((exam) => {
         const row = {};
-        activeCols.forEach((col) => {
-          if (col.id === "candidateName") row["Candidate Name"] = exam.candidateName;
-          if (col.id === "technology") row["Technology"] = exam.technology;
-          if (col.id === "examName") row["Exam Name"] = exam.examName;
-          if (col.id === "mobileNo") row["Mobile No."] = exam.mobileNo;
+        colsToExport.forEach((col) => {
+          if (col.id === "candidateName") row["Candidate Name"] = exam.candidateName || "";
+          if (col.id === "technology") row["Technology"] = exam.technology || "";
+          if (col.id === "examName") row["Exam Name"] = exam.examName || "";
+          if (col.id === "mobileNo") row["Mobile No."] = exam.mobileNo || "";
           if (col.id === "mode") row["Mode"] = exam.mode || "ONLINE";
           if (col.id === "examDate") row["Exam Date"] = exam.examDate ? new Date(exam.examDate).toISOString().slice(0, 10) : "";
           if (col.id === "examTime") row["Exam Time"] = displayTime(exam.examTime);
@@ -304,63 +307,13 @@ export default function CandidateRecordSubmodule({ refreshKey = 0 }) {
 
           <div className="flex flex-wrap justify-center sm:justify-end gap-2 w-full lg:w-auto">
             {/* Column Visibility Selector Button */}
-            <div ref={columnDropdownRef} className="relative">
-              <button
-                type="button"
-                onClick={() => setShowColumnDropdown((prev) => !prev)}
-                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 px-3.5 py-2.5 text-xs font-semibold text-slate-300 transition cursor-pointer"
-              >
-                <Columns size={15} className="text-blue-400" />
-                <span>Columns ({activeColumnCount}/{ALL_COLUMNS.length})</span>
-              </button>
-
-              {/* Column Selection Dropdown */}
-              {showColumnDropdown && (
-                <div className="absolute right-0 mt-2 z-50 w-64 rounded-2xl border border-white/10 bg-[#0f172a] p-3 shadow-2xl backdrop-blur-xl">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-2">
-                    <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                      <SlidersHorizontal size={13} className="text-blue-400" /> Show/Hide Columns
-                    </span>
-                    <div className="flex items-center gap-1 text-[11px]">
-                      <button
-                        type="button"
-                        onClick={() => toggleAllColumns(true)}
-                        className="text-blue-400 hover:underline"
-                      >
-                        All
-                      </button>
-                      <span className="text-slate-600">|</span>
-                      <button
-                        type="button"
-                        onClick={() => toggleAllColumns(false)}
-                        className="text-rose-400 hover:underline"
-                      >
-                        None
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
-                    {ALL_COLUMNS.map((col) => (
-                      <label
-                        key={col.id}
-                        className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-slate-300 hover:bg-white/5 cursor-pointer transition"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={!!visibleColumns[col.id]}
-                          onChange={() => toggleColumn(col.id)}
-                          className="h-3.5 w-3.5 rounded border-white/20 bg-slate-900 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                        />
-                        <span className={visibleColumns[col.id] ? "text-white font-medium" : "text-slate-400"}>
-                          {col.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
+            <ColumnSelectorDropdown
+              columns={ALL_COLUMNS}
+              visibleColumns={visibleColumns}
+              onToggleColumn={toggleColumn}
+              onToggleAll={toggleAllColumns}
+              buttonClassName="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 px-3.5 py-2.5 text-xs font-semibold text-slate-300 transition cursor-pointer"
+            />
 
             <button
               type="button"
@@ -423,7 +376,7 @@ export default function CandidateRecordSubmodule({ refreshKey = 0 }) {
               </thead>
               <tbody className="divide-y divide-white/5 text-slate-300 bg-[#0f172a]">
                 {paginatedExams.map((exam) => (
-                  <tr key={exam.id} className="transition hover:bg-white/[0.04]">
+                  <tr key={exam.id} className="transition hover:bg-white/[0.04]" onClick={() => router.push(`/candidate-record/${exam.id}`)}>
                     {visibleColumns.candidateName && (
                       <td className="px-4 py-3 font-semibold text-white whitespace-nowrap">
                         <Link
@@ -518,7 +471,7 @@ export default function CandidateRecordSubmodule({ refreshKey = 0 }) {
                       </td>
                     )}
 
-                    {visibleColumns.aadharCard && (
+                    {/* {visibleColumns.aadharCard && (
                       <td className="px-4 py-3 whitespace-nowrap">
                         {exam.aadharCard ? (
                           <a
@@ -533,7 +486,7 @@ export default function CandidateRecordSubmodule({ refreshKey = 0 }) {
                           <span className="text-xs text-slate-500 italic">Not Provided</span>
                         )}
                       </td>
-                    )}
+                    )} */}
 
                     {/* Action cell — links to candidate detail page */}
                     <td className="px-4 py-3 whitespace-nowrap text-center">
@@ -671,6 +624,18 @@ export default function CandidateRecordSubmodule({ refreshKey = 0 }) {
             ) : null}
           </div>
         </div>
+      )}
+
+      {showExportModal && (
+        <ExportModal
+          itemCount={filteredExams.length}
+          activeColumnCount={ALL_COLUMNS.filter((col) => visibleColumns[col.id]).length}
+          totalColumnCount={ALL_COLUMNS.length}
+          entityLabel="candidate record"
+          title="Export these candidate record(s)?"
+          onClose={() => setShowExportModal(false)}
+          onConfirmExport={handleConfirmExport}
+        />
       )}
     </div>
   );
