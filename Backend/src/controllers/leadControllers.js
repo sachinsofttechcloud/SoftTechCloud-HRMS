@@ -49,7 +49,7 @@ function code(prefix) {
 function validate(input, { partial = false } = {}) {
   const required = [
     "fullName", "mobileNumber", "whatsappNumber", "technology", "examName",
-    "examCode", "mode", "preferredDate", "preferredTime", "quotedFee",
+    "mode", "preferredDate", "preferredTime", "quotedFee",
     "source", "assignedEmployeeId", "nextAction", "nextActionAt",
   ];
   const errors = {};
@@ -127,6 +127,7 @@ export async function listLeads(req, res) {
       where.status = "ACTIVE";
     } else if (filter === "MINE" || filter === "mine") {
       where.assignedEmployeeId = req.user.id;
+      if (!stage) where.stage = { not: "CONVERTED" };
     } else if (filter === "DUPLICATE") {
       const duplicates = await prisma.lead.groupBy({
         by: ["mobileNumber"],
@@ -134,6 +135,11 @@ export async function listLeads(req, res) {
         having: { mobileNumber: { _count: { gt: 1 } } },
       });
       where.mobileNumber = { in: duplicates.map((row) => row.mobileNumber) };
+      if (!stage) where.stage = { not: "CONVERTED" };
+    } else if (filter === "CONVERTED" || filter === "converted") {
+      where.stage = "CONVERTED";
+    } else if (!stage && (!filter || filter === "ALL" || filter === "all")) {
+      where.stage = { not: "CONVERTED" };
     } else if (filter === "today") {
       where.createdAt = { gte: startToday, lte: endToday };
     } else if (filter === "tomorrow") {
@@ -356,6 +362,31 @@ export async function convertLead(req, res) {
     if (!lead) return res.status(404).json({ error: "Lead not found" });
     if (lead.stage === "LOST_NOT_INTERESTED") return res.status(409).json({ error: "A lost lead must be reopened before conversion" });
 
+    // Extract examDate and examTime from req.body if provided
+    let examDate = lead.preferredDate;
+    if (req.body.examDate) {
+      const rawDate = String(req.body.examDate).trim();
+      const dateStr = rawDate.includes("T") ? rawDate.split("T")[0] : rawDate;
+      const parsedDate = new Date(`${dateStr}T00:00:00.000Z`);
+      if (Number.isNaN(parsedDate.getTime())) {
+        return res.status(400).json({ error: "Invalid exam date provided" });
+      }
+      examDate = parsedDate;
+    }
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const examDateStart = new Date(examDate);
+    examDateStart.setHours(0, 0, 0, 0);
+
+    if (examDateStart < todayStart) {
+      return res.status(400).json({ error: "Previous dates cannot be selected. Please choose today or a future date." });
+    }
+
+    const examTime = text(req.body.examTime) || lead.preferredTime || "10:00 AM";
+    const voucher = req.body.voucher !== undefined ? Boolean(req.body.voucher) : Boolean(lead.voucherNeed);
+    const assistSupport = req.body.assistSupport !== undefined ? Boolean(req.body.assistSupport) : !voucher;
+
     const result = await prisma.$transaction(async (tx) => {
       let candidate = await tx.candidate.findUnique({ where: { mobileNumber: lead.mobileNumber } });
       if (!candidate) {
@@ -379,11 +410,11 @@ export async function convertLead(req, res) {
           mobileNo: candidate.mobileNumber,
           mode: lead.mode,
           centerName: lead.mode === "ONLINE" ? null : text(req.body.centerName) || null,
-          examDate: lead.preferredDate,
-          examTime: lead.preferredTime,
-          voucher: lead.voucherNeed,
-          assistSupport: !lead.voucherNeed,
-          paymentStatus: "COMPLETED",
+          examDate,
+          examTime,
+          voucher,
+          assistSupport,
+          paymentStatus: "PENDING",
           lifecycleStatus: "SCHEDULED",
         },
       });
@@ -397,10 +428,10 @@ export async function convertLead(req, res) {
           nextAction: "Exam booking created",
           activities: {
             create: {
-              userId: req.user.id,
+              userId: req.user?.id || null,
               type: "CONVERTED",
               title: `Converted to ${candidate.candidateCode}`,
-              details: `Exam booking #${exam.id} created without re-entering candidate data.`,
+              details: `Exam booking #${exam.id} created for ${examTime} on ${examDate.toISOString().slice(0, 10)}.`,
             },
           },
         },
@@ -428,5 +459,19 @@ export async function listCandidates(req, res) {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to fetch candidates" });
+  }
+}
+
+export async function getLeadById(req, res) {
+  try {
+    const lead = await prisma.lead.findUnique({
+      where: { id: req.params.id },
+      include: leadInclude,
+    });
+    if (!lead) return res.status(404).json({ error: "Lead not found" });
+    res.json(lead);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to fetch lead details" });
   }
 }

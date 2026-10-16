@@ -13,6 +13,7 @@ import { notifyEmployeeMilestones } from "./lib/employeeMilestones.js";
 import { grantDefaultsToExistingUsers } from "./lib/moduleAccess.js";
 import { sendDueExamReminders } from "./lib/examReminders.js";
 import examRoutes from "./routes/examRoutes.js";
+import { syncCompletedExamsToLeads } from "./controllers/examControllers.js";
 import leadRoutes from "./routes/leadRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import { runLeadAutomation } from "./lib/leadAutomation.js";
@@ -106,9 +107,16 @@ app.listen(PORT, () => {
   console.log(`🔐 Auth API:    http://localhost:${PORT}/api/auth`);
   console.log(`👥 HR API:      http://localhost:${PORT}/api/hr`);
   console.log(`=========================================`);
+  prisma.$executeRawUnsafe(`
+    ALTER TABLE "exams" DROP CONSTRAINT IF EXISTS "exams_voucher_assist_support_check";
+    ALTER TABLE "exams" DROP CONSTRAINT IF EXISTS "exams_voucher_cost_check";
+  `).then(() => {
+    console.log("✅ Verified exams table constraints allow both voucher and assist support.");
+  }).catch((err) => console.warn("Drop constraint error:", err.message));
   notifyEmployeeMilestones().catch((err) => console.warn("Milestone notify:", err.message));
   sendDueExamReminders().catch((err) => console.warn("Exam SMS reminder:", err.message));
   runLeadAutomation().catch((err) => console.warn("Lead automation:", err.message));
+  syncCompletedExamsToLeads().catch((err) => console.warn("Sync completed exams to leads:", err.message));
   setInterval(() => {
     notifyEmployeeMilestones().catch((err) => console.warn("Milestone notify:", err.message));
   }, 60 * 60 * 1000);
@@ -117,6 +125,9 @@ app.listen(PORT, () => {
   }, 5 * 60 * 1000);
   setInterval(() => {
     runLeadAutomation().catch((err) => console.warn("Lead automation:", err.message));
+  }, 5 * 60 * 1000);
+  setInterval(() => {
+    syncCompletedExamsToLeads().catch((err) => console.warn("Sync completed exams to leads:", err.message));
   }, 5 * 60 * 1000);
 });
 

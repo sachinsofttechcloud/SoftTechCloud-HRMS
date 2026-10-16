@@ -4,6 +4,7 @@ import {
   convertLead,
   createLead,
   findLeadDuplicates,
+  getLeadById,
   getLeadSummary,
   listCandidates,
   listLeads,
@@ -17,6 +18,7 @@ router.get("/", listLeads);
 router.get("/summary", getLeadSummary);
 router.get("/duplicates", findLeadDuplicates);
 router.get("/candidates", listCandidates);
+router.get("/:id", getLeadById);
 router.post("/", createLead);
 router.put("/:id", updateLead);
 router.post("/:id/convert", convertLead);

@@ -621,7 +621,9 @@ function examData(body) {
   }
   if (body.voucher !== undefined) {
     data.voucher = Boolean(body.voucher);
-    data.assistSupport = !data.voucher;
+  }
+  if (body.assistSupport !== undefined) {
+    data.assistSupport = Boolean(body.assistSupport);
   }
   return data;
 }

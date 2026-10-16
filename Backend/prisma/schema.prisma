@@ -332,6 +332,8 @@ model Exam {
   paymentStatus          String        @default("PENDING") @map("payment_status")
   lifecycleStatus        String        @default("SCHEDULED") @map("lifecycle_status")
   cancelledAt            DateTime?     @map("cancelled_at")
+  caseRaisedAt           DateTime?     @map("case_raised_at")
+  caseReason             String?       @map("case_reason")
   reminderSentAt         DateTime?     @map("reminder_sent_at")
   oneHourReminderSentAt  DateTime?     @map("one_hour_reminder_sent_at")
   sevenDayReminderSentAt DateTime?     @map("seven_day_reminder_sent_at")
@@ -351,6 +353,22 @@ model Exam {
 
   @@index([candidateId])
   @@map("exams")
+}
+
+model ExamCatalog {
+  id          Int      @id @default(autoincrement())
+  examCode    String   @unique @map("exam_code")
+  examName    String   @map("exam_name")
+  technology  String
+  provider    String?
+  duration    String?
+  examFee     Decimal? @map("exam_fee") @db.Decimal(10, 2)
+  description String?
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("exam_catalog")
 }
 
 model Candidate {
