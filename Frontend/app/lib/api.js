@@ -554,8 +554,12 @@ export async function apiGetTodayExams() {
   return await fetcher("/exams/today-exams", { method: "GET" });
 }
 
+export async function apiGetPaymentStatusExams() {
+  return await fetcher("/exams/payment-status", { method: "GET" });
+}
+
 export async function apiGetPendingPaymentExams() {
-  return await fetcher("/exams/pending-payment", { method: "GET" });
+  return await fetcher("/exams/payment-status", { method: "GET" });
 }
 
 export async function apiGetCaseRaiseExams() {
@@ -575,10 +579,23 @@ export async function apiGetCompletedExams() {
   return await fetcher("/exams/completed-exams", { method: "GET" });
 }
 
-export async function apiGetExamCatalog({ search = "", technology = "" } = {}) {
+export async function apiGetExamCatalog({
+  search = "",
+  technology = "",
+  examName = "",
+  voucherStatus = "",
+  levelTier = "",
+  minCost = "",
+  maxCost = "",
+} = {}) {
   const params = new URLSearchParams();
   if (search) params.append("search", search);
-  if (technology) params.append("technology", technology);
+  if (technology && technology !== "all") params.append("technology", technology);
+  if (examName && examName !== "all") params.append("examName", examName);
+  if (voucherStatus && voucherStatus !== "all") params.append("voucherStatus", voucherStatus);
+  if (levelTier && levelTier !== "all") params.append("levelTier", levelTier);
+  if (minCost) params.append("minCost", minCost);
+  if (maxCost) params.append("maxCost", maxCost);
   const q = params.toString();
   return await fetcher(`/exams/catalog${q ? `?${q}` : ""}`, { method: "GET" });
 }
@@ -622,10 +639,13 @@ export async function apiUpdateExam(id, payload) {
   return await fetcher(`/exams/${id}`, { method: "PUT", body: JSON.stringify(payload) });
 }
 
-export async function apiUpdateExamPayment(id, paymentStatus) {
+export async function apiUpdateExamPayment(id, paymentStatus, amount = null) {
+  const body = typeof paymentStatus === "object"
+    ? paymentStatus
+    : { paymentStatus, ...(amount !== null ? { amount } : {}) };
   return await fetcher(`/exams/${id}/payment`, {
     method: "PATCH",
-    body: JSON.stringify({ paymentStatus }),
+    body: JSON.stringify(body),
   });
 }
 
@@ -640,10 +660,11 @@ export async function apiRescheduleExam(id, payload) {
   });
 }
 
-export async function apiCompleteExam(id, paymentStatus = "COMPLETED") {
+export async function apiCompleteExam(id, payload = "COMPLETED") {
+  const body = typeof payload === "string" ? { paymentStatus: payload } : payload;
   return await fetcher(`/exams/${id}/complete`, {
     method: "PATCH",
-    body: JSON.stringify({ paymentStatus }),
+    body: JSON.stringify(body),
   });
 }
 

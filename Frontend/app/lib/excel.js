@@ -101,17 +101,30 @@ export function excelDateToYmd(value) {
     }
   }
   const s = String(value).trim();
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
-  const dmy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  // YYYY-MM-DD or YYYY/MM/DD
+  if (/^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}/.test(s)) {
+    const parts = s.split(/[\/\-]/);
+    return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].slice(0, 2).padStart(2, "0")}`;
+  }
+  // DD/MM/YYYY or DD-MM-YYYY or DD.MM.YYYY
+  const dmy = s.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
   if (dmy) {
     return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
+  }
+  // Fallback to Date parser
+  const parsed = new Date(s);
+  if (!Number.isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, "0");
+    const d = String(parsed.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
   }
   return s;
 }
 
 export async function parseAttendanceExcel(file) {
   const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
+  const workbook = XLSX.read(new Uint8Array(buffer), { type: "array", cellDates: true });
   const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
   const json = XLSX.utils.sheet_to_json(firstSheet, { defval: "", raw: true });
 
@@ -141,23 +154,59 @@ const EXAM_HEADER_MAP = {
   fullname: "candidateName",
   candidate: "candidateName",
   name: "candidateName",
+  studentname: "candidateName",
+  student: "candidateName",
+  nameofcandidate: "candidateName",
+  employeename: "candidateName",
+
   technology: "technology",
   tech: "technology",
+  skill: "technology",
+  domain: "technology",
+  category: "technology",
+
   examname: "examName",
   exam: "examName",
+  certification: "examName",
+  certificationname: "examName",
+  examtitle: "examName",
+  title: "examName",
+
   mobileno: "mobileNo",
   mobilenumber: "mobileNo",
   mobile: "mobileNo",
   phone: "mobileNo",
+  phonenumber: "mobileNo",
+  contact: "mobileNo",
+  contactnumber: "mobileNo",
+  phoneno: "mobileNo",
+
   examdate: "examDate",
   date: "examDate",
+  dateofexam: "examDate",
+  examdates: "examDate",
+
   examtime: "examTime",
+  time: "examTime",
+  timing: "examTime",
+  slot: "examTime",
+  examslot: "examTime",
+  timeofexam: "examTime",
   examstarttime: "startTime",
   starttime: "startTime",
   examendtime: "endTime",
   endtime: "endTime",
+
   voucher: "voucher",
+  voucherstatus: "voucher",
+  voucherneeded: "voucher",
+  vouchersupport: "voucher",
+
   assistsupport: "assistSupport",
+  support: "assistSupport",
+  assistance: "assistSupport",
+  proxysupport: "assistSupport",
+  examassist: "assistSupport",
 };
 
 function excelTimeToDisplay(value) {
@@ -167,7 +216,7 @@ function excelTimeToDisplay(value) {
     if (parsed) {
       const hour = parsed.H;
       const minute = String(parsed.M).padStart(2, "0");
-      const ampm = hour >= 12 ? "Pm" : "Am";
+      const ampm = hour >= 12 ? "PM" : "AM";
       const hour12 = hour % 12 || 12;
       return `${hour12}:${minute} ${ampm}`;
     }
@@ -175,16 +224,29 @@ function excelTimeToDisplay(value) {
   if (value instanceof Date && !Number.isNaN(value.getTime())) {
     const hour = value.getHours();
     const minute = String(value.getMinutes()).padStart(2, "0");
-    const ampm = hour >= 12 ? "Pm" : "Am";
+    const ampm = hour >= 12 ? "PM" : "AM";
     const hour12 = hour % 12 || 12;
     return `${hour12}:${minute} ${ampm}`;
   }
-  return String(value).trim();
+  const s = String(value).trim();
+  // If 24-hr format like "14:30" or "09:00"
+  const m24 = s.match(/^(\d{1,2}):(\d{2})$/);
+  if (m24) {
+    const h = parseInt(m24[1], 10);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const h12 = h % 12 || 12;
+    return `${h12}:${m24[2]} ${ampm}`;
+  }
+  return s;
 }
 
 export function downloadExamTemplate() {
   const today = new Date();
   const ymd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowYmd = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}-${String(tomorrow.getDate()).padStart(2, "0")}`;
+
   const rows = [
     {
       "Full Name": "John Doe",
@@ -192,10 +254,21 @@ export function downloadExamTemplate() {
       "Exam Name": "AWS Certified Solutions Architect",
       "Mobile No": "+91 98765 43210",
       "Exam Date": ymd,
-      "Start Time": "10:00 Am",
-      "End Time": "12:00 Pm",
+      "Start Time": "10:00 AM",
+      "End Time": "12:00 PM",
       Voucher: "No",
       "Assist Support": "True",
+    },
+    {
+      "Full Name": "Jane Smith",
+      Technology: "Microsoft Azure",
+      "Exam Name": "Microsoft Azure Administrator (AZ-104)",
+      "Mobile No": "+91 91234 56789",
+      "Exam Date": tomorrowYmd,
+      "Start Time": "02:00 PM",
+      "End Time": "04:00 PM",
+      Voucher: "Yes",
+      "Assist Support": "False",
     },
   ];
   downloadExcel("exam-candidate-template.xlsx", rows, "Candidates");
@@ -203,8 +276,10 @@ export function downloadExamTemplate() {
 
 export async function parseExamExcel(file) {
   const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
-  const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+  const workbook = XLSX.read(new Uint8Array(buffer), { type: "array", cellDates: true });
+  const firstSheetName = workbook.SheetNames[0];
+  if (!firstSheetName) return [];
+  const firstSheet = workbook.Sheets[firstSheetName];
   const json = XLSX.utils.sheet_to_json(firstSheet, { defval: "", raw: true });
 
   return json
@@ -217,15 +292,22 @@ export async function parseExamExcel(file) {
 
       const startTime = excelTimeToDisplay(mapped.startTime);
       const endTime = excelTimeToDisplay(mapped.endTime);
-      const examTime = String(mapped.examTime || "").trim()
-        || (startTime || endTime ? `${startTime} to ${endTime}` : "");
+      let examTime = String(mapped.examTime || "").trim();
+      if (!examTime && (startTime || endTime)) {
+        examTime = startTime && endTime ? `${startTime} to ${endTime}` : (startTime || endTime);
+      }
+
+      let mobileNo = String(mapped.mobileNo ?? "").trim();
+      if (/^\d+\.0+$/.test(mobileNo)) {
+        mobileNo = mobileNo.split(".")[0];
+      }
 
       return {
         rowNumber: index + 2,
         candidateName: String(mapped.candidateName || "").trim(),
         technology: String(mapped.technology || "").trim(),
         examName: String(mapped.examName || "").trim(),
-        mobileNo: String(mapped.mobileNo || "").trim(),
+        mobileNo,
         examDate: excelDateToYmd(mapped.examDate),
         examTime,
         voucher: String(mapped.voucher || "").trim(),

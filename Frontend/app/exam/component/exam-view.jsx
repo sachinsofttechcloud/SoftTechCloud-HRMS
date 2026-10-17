@@ -59,14 +59,16 @@ export default function ExamView() {
             const tabParam = params.get("tab");
             if (tabParam) {
                 if (tabParam === "Active") setActiveSubmodule("Today");
-                else if (
+                else if (tabParam === "Pending Payment" || tabParam === "Payment Status") {
+                    setActiveSubmodule("Payment Status");
+                } else if (
                     [
                         "Today",
                         "Upcoming",
                         "Past",
                         "Case Raise",
                         "Exam Catalogue",
-                        "Pending Payment",
+                        "Payment Status",
                     ].includes(tabParam)
                 ) {
                     setActiveSubmodule(tabParam);
@@ -102,8 +104,8 @@ export default function ExamView() {
             icon: BookOpen,
         },
         {
-            id: "Pending Payment",
-            label: "Pending Payment",
+            id: "Payment Status",
+            label: "Payment Status",
             icon: CreditCard,
         },
     ];
@@ -145,7 +147,11 @@ export default function ExamView() {
 
     const handleShiftSection = (targetTab) => {
         if (targetTab) {
-            setActiveSubmodule(targetTab);
+            if (targetTab === "Pending Payment" || targetTab === "Payment Status") {
+                setActiveSubmodule("Payment Status");
+            } else {
+                setActiveSubmodule(targetTab);
+            }
         }
         setRefreshKey((k) => k + 1);
     };
@@ -177,22 +183,24 @@ export default function ExamView() {
                         );
                     })}
                 </div>
-                <div ref={menuRef} className="relative self-end xl:self-auto">
-                    <Button
-                        className="w-max! whitespace-nowrap! md:py-2.5! text-xs! md:text-sm! flex items-center gap-2 justify-center"
-                        handleClick={handleAddCandidate}
-                    >
-                        <Plus size={16} />
-                        Add Candidate
-                        <ChevronDown size={14} />
-                    </Button>
-                    {showAddCandidateModal && (
-                        <AddCandidateModal
-                            onSingleAdd={handleSingleAdd}
-                            onBulkAdd={handleBulkAdd}
-                        />
-                    )}
-                </div>
+                {activeSubmodule !== "Exam Catalogue" && (
+                    <div ref={menuRef} className="relative self-end xl:self-auto">
+                        <Button
+                            className="w-max! whitespace-nowrap! md:py-2.5! text-xs! md:text-sm! flex items-center gap-2 justify-center"
+                            handleClick={handleAddCandidate}
+                        >
+                            <Plus size={16} />
+                            Add Candidate
+                            <ChevronDown size={14} />
+                        </Button>
+                        {showAddCandidateModal && (
+                            <AddCandidateModal
+                                onSingleAdd={handleSingleAdd}
+                                onBulkAdd={handleBulkAdd}
+                            />
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Submodule Container */}
@@ -224,7 +232,7 @@ export default function ExamView() {
                 {activeSubmodule === "Exam Catalogue" && (
                     <ExamCatalogSubmodule refreshKey={refreshKey} />
                 )}
-                {activeSubmodule === "Pending Payment" && (
+                {(activeSubmodule === "Payment Status" || activeSubmodule === "Pending Payment") && (
                     <PendingPaymentSubmodule
                         refreshKey={refreshKey}
                         onShiftSection={handleShiftSection}
@@ -241,12 +249,16 @@ export default function ExamView() {
             {showBulkImport && (
                 <BulkImportModal
                     onClose={() => setShowBulkImport(false)}
-                    onImported={(result) =>
+                    onImported={(result) => {
+                        const exams = result?.exams || [];
+                        const today = todayKey();
+                        const hasTodayExam = exams.some((e) => localDateKey(e.examDate) === today);
+                        const targetDate = hasTodayExam ? today : exams[0]?.examDate;
                         finishCreate(
-                            result?.exams?.[0]?.examDate,
+                            targetDate,
                             result?.message || `Successfully imported ${result?.created || 0} candidate(s)`
-                        )
-                    }
+                        );
+                    }}
                 />
             )}
             {successMessage && (

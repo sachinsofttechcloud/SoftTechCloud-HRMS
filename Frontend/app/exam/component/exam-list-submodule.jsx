@@ -43,6 +43,7 @@ const EMPTY_FILTERS = {
   quickDate: "all",
   startDate: "",
   endDate: "",
+  paymentFilter: "all",
 };
 
 const EXAM_COLUMNS = [
@@ -56,6 +57,7 @@ const EXAM_COLUMNS = [
   { id: "voucher", label: "Voucher", defaultVisible: true },
   { id: "assistSupport", label: "Assist Support", defaultVisible: true },
   { id: "paymentStatus", label: "Payment Status", defaultVisible: true },
+  { id: "amount", label: "Amount", defaultVisible: true },
   { id: "status", label: "Status", defaultVisible: true },
 ];
 
@@ -241,6 +243,8 @@ export default function ExamListSubmodule({
   isTodayTab = false,
   isCaseRaiseTab = false,
   isPendingPaymentTab = false,
+  isPaymentStatusTab = false,
+  showPaymentFilter = false,
   showQuickDateFilter = false,
   allowPaymentDialog = true,
   showCompleteButton = false,
@@ -262,6 +266,7 @@ export default function ExamListSubmodule({
   const [reschedule, setReschedule] = useState({ examDate: "", examTime: "09:00" });
   const [caseRaiseReason, setCaseRaiseReason] = useState("");
   const [completePaymentStatus, setCompletePaymentStatus] = useState("YES");
+  const [completeAmount, setCompleteAmount] = useState("");
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
   const [showExportModal, setShowExportModal] = useState(false);
@@ -347,6 +352,13 @@ export default function ExamListSubmodule({
         }
       }
 
+      // Payment Status filter (for Payment Status section)
+      if (appliedFilters.paymentFilter && appliedFilters.paymentFilter !== "all") {
+        const expected = appliedFilters.paymentFilter.toUpperCase();
+        const actual = String(exam.paymentStatus || "").toUpperCase();
+        if (actual !== expected) return false;
+      }
+
       return true;
     });
 
@@ -403,7 +415,9 @@ export default function ExamListSubmodule({
     }
 
     if (type === "complete") {
-      setCompletePaymentStatus("YES");
+      const isCompleted = String(exam.paymentStatus || "").toUpperCase() === "COMPLETED";
+      setCompletePaymentStatus(isPendingPaymentTab ? "YES" : (isCompleted ? "YES" : "NO"));
+      setCompleteAmount(exam.amount !== null && exam.amount !== undefined && Number(exam.amount) > 0 ? String(exam.amount) : "");
     }
   };
 
@@ -459,6 +473,7 @@ export default function ExamListSubmodule({
         if (col.id === "voucher") row["Voucher"] = exam.voucher ? "Yes" : "No";
         if (col.id === "assistSupport") row["Assist Support"] = exam.assistSupport ? "Yes" : "No";
         if (col.id === "paymentStatus") row["Payment Status"] = exam.paymentStatus || "PENDING";
+        if (col.id === "amount") row["Amount"] = exam.amount && Number(exam.amount) > 0 ? `₹${Number(exam.amount).toLocaleString("en-IN")}` : "0";
         if (col.id === "status") row["Status"] = exam.status || defaultStatus;
       });
       return row;
@@ -521,6 +536,23 @@ export default function ExamListSubmodule({
               >
                 <option value="asc">Time: Ascending</option>
                 <option value="desc">Time: Descending</option>
+              </select>
+            </label>
+          ) : isPaymentStatusTab || isPendingPaymentTab || showPaymentFilter ? (
+            <label className="space-y-1.5">
+              <span className="text-[13px] xl:text-[15px] font-medium !text-[#cfcaca] flex items-center gap-1.5">
+                <CreditCard size={14} className="text-cyan-400" />
+                Payment Status
+              </span>
+
+              <select
+                value={filters.paymentFilter || "all"}
+                onChange={(event) => updateFilter("paymentFilter", event.target.value)}
+                className="bg-slate-900/90 w-full rounded-lg border border-white/10 px-3 py-2 text-sm text-white outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 cursor-pointer"
+              >
+                <option value="all">All Payments</option>
+                <option value="PENDING">Payment Pending</option>
+                <option value="COMPLETED">Payment Completed</option>
               </select>
             </label>
           ) : showQuickDateFilter ? (
@@ -604,13 +636,13 @@ export default function ExamListSubmodule({
           </div>
 
           <div className="flex flex-wrap justify-end gap-2 w-full sm:w-auto">
-            <ColumnSelectorDropdown
+            {/* <ColumnSelectorDropdown
               columns={EXAM_COLUMNS}
               visibleColumns={visibleColumns}
               onToggleColumn={toggleColumn}
               onToggleAll={toggleAllColumns}
               buttonClassName="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 px-3.5 py-2 text-xs font-semibold text-slate-300 transition cursor-pointer"
-            />
+            /> */}
 
             <button
               type="button"
@@ -717,10 +749,11 @@ export default function ExamListSubmodule({
                   ) : null}
 
                   {showPaymentStatus ? (
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 select-none pointer-events-none">
                       <CreditCard size={14} className="text-slate-500" />
-                      <span className={`font-semibold text-[11px] xl:text-[12px] ${exam.paymentStatus === "COMPLETED" ? "text-emerald-300" : "text-amber-300"}`}>
-                        Payment: {exam.paymentStatus === "COMPLETED" ? "Completed" : "Pending"}
+                      <span className={`font-semibold text-[11px] xl:text-[12px] ${String(exam.paymentStatus || "").toUpperCase() === "COMPLETED" ? "text-emerald-400" : "text-amber-400"}`}>
+                        Payment: {String(exam.paymentStatus || "").toUpperCase() === "COMPLETED" ? "Completed" : "Pending"}
+                        {exam.amount && Number(exam.amount) > 0 ? ` (₹${Number(exam.amount).toLocaleString("en-IN")})` : ""}
                       </span>
                     </div>
                   ) : null}
@@ -748,17 +781,7 @@ export default function ExamListSubmodule({
 
                 {/* Actions */}
                 <div className="relative mt-4 flex flex-wrap justify-end gap-2 border-t border-white/10 pt-3">
-                  {isPendingPaymentTab && (
-                    <button
-                      type="button"
-                      onClick={() => openDialog(exam, "payment")}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 transition cursor-pointer"
-                    >
-                      <CheckCircle2 size={14} /> Receive / Mark Paid
-                    </button>
-                  )}
-
-                  {interactive && showCompleteButton && (
+                  {interactive && (showCompleteButton || (isPast && String(exam.paymentStatus || "").toUpperCase() === "PENDING")) && (
                     <button
                       type="button"
                       onClick={() => openDialog(exam, "complete")}
@@ -855,7 +878,7 @@ export default function ExamListSubmodule({
                   {dialog === "payment"
                     ? "Update Payment Status"
                     : dialog === "complete"
-                      ? "Complete Exam"
+                      ? (isPendingPaymentTab ? "Complete Payment" : "Complete Exam")
                       : dialog === "cancel"
                         ? "Cancel Exam"
                         : dialog === "case-raise"
@@ -878,87 +901,142 @@ export default function ExamListSubmodule({
             {/* Complete Dialog */}
             {dialog === "complete" ? (
               <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-slate-200">
-                    Mark examination for <strong className="text-white">{selectedExam.candidateName}</strong> as completed.
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    Has the payment been received for this candidate?
-                  </p>
-                </div>
+                {(() => {
+                  const examDateStr = selectedExam?.examDate ? getIsoDate(selectedExam.examDate) : "";
+                  const isFuture = examDateStr && examDateStr > todayIso() && !isPendingPaymentTab && !isPaymentStatusTab;
+                  const isStatusTab = isPendingPaymentTab || isPaymentStatusTab;
 
-                <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setCompletePaymentStatus("YES")}
-                      className={`flex flex-col items-center justify-center rounded-xl border p-3.5 text-center transition cursor-pointer ${completePaymentStatus === "YES"
-                        ? "border-emerald-500 bg-emerald-500/20 text-emerald-300 ring-2 ring-emerald-500/40"
-                        : "border-white/10 bg-slate-900/60 text-slate-400 hover:bg-white/5 hover:text-white"
-                        }`}
-                    >
-                      <div className="flex items-center gap-1.5 font-bold text-sm">
-                        <CheckCircle2 size={16} className={completePaymentStatus === "YES" ? "text-emerald-400" : ""} />
-                        <span>Yes</span>
+                  return (
+                    <>
+                      <div>
+                        <p className="text-sm text-slate-200">
+                          {isStatusTab ? (
+                            <>
+                              Update payment status and details for <strong className="text-white">{selectedExam.candidateName}</strong>.
+                            </>
+                          ) : isFuture ? (
+                            <>
+                              Update payment status for upcoming examination of <strong className="text-white">{selectedExam.candidateName}</strong>.
+                            </>
+                          ) : (
+                            <>
+                              Mark examination for <strong className="text-white">{selectedExam.candidateName}</strong> as completed.
+                            </>
+                          )}
+                        </p>
+                        <p className="mt-1 text-xs text-slate-400">
+                          Select payment status and enter payment amount:
+                        </p>
                       </div>
-                      <span className="mt-1 text-[11px] opacity-80">Payment Completed</span>
-                      <span className="mt-1 text-[10px] text-emerald-400 font-medium">
-                        {selectedExam?.examDate && getIsoDate(selectedExam.examDate) > todayIso()
-                          ? "Shifts to Upcoming Exam"
-                          : "Shifts to Past Exam"}
-                      </span>
-                    </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setCompletePaymentStatus("NO")}
-                      className={`flex flex-col items-center justify-center rounded-xl border p-3.5 text-center transition cursor-pointer ${completePaymentStatus === "NO"
-                        ? "border-amber-500 bg-amber-500/20 text-amber-300 ring-2 ring-amber-500/40"
-                        : "border-white/10 bg-slate-900/60 text-slate-400 hover:bg-white/5 hover:text-white"
-                        }`}
-                    >
-                      <div className="flex items-center gap-1.5 font-bold text-sm">
-                        <Clock size={16} className={completePaymentStatus === "NO" ? "text-amber-400" : ""} />
-                        <span>No</span>
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setCompletePaymentStatus("YES")}
+                            className={`flex flex-col items-center justify-center rounded-xl border p-3.5 text-center transition cursor-pointer ${completePaymentStatus === "YES"
+                              ? "border-emerald-500 bg-emerald-500/20 text-emerald-300 ring-2 ring-emerald-500/40"
+                              : "border-white/10 bg-slate-900/60 text-slate-400 hover:bg-white/5 hover:text-white"
+                              }`}
+                          >
+                            <div className="flex items-center gap-1.5 font-bold text-sm">
+                              <CheckCircle2 size={16} className={completePaymentStatus === "YES" ? "text-emerald-400" : ""} />
+                              <span>Yes</span>
+                            </div>
+                            <span className="mt-1 text-[11px] opacity-80">Payment Completed</span>
+                            <span className="mt-1 text-[10px] text-emerald-400 font-medium">
+                              {isFuture ? "Keeps in Upcoming Schedule" : "Shifts to Past Exam & Payment Status"}
+                            </span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setCompletePaymentStatus("NO")}
+                            className={`flex flex-col items-center justify-center rounded-xl border p-3.5 text-center transition cursor-pointer ${completePaymentStatus === "NO"
+                              ? "border-amber-500 bg-amber-500/20 text-amber-300 ring-2 ring-amber-500/40"
+                              : "border-white/10 bg-slate-900/60 text-slate-400 hover:bg-white/5 hover:text-white"
+                              }`}
+                          >
+                            <div className="flex items-center gap-1.5 font-bold text-sm">
+                              <Clock size={16} className={completePaymentStatus === "NO" ? "text-amber-400" : ""} />
+                              <span>No</span>
+                            </div>
+                            <span className="mt-1 text-[11px] opacity-80">Payment Pending</span>
+                            <span className="mt-1 text-[10px] text-amber-400 font-medium">
+                              {isFuture ? "Keeps in Upcoming Schedule" : isStatusTab ? "Remains in Payment Status" : "Shifts to Payment Status"}
+                            </span>
+                          </button>
+                        </div>
                       </div>
-                      <span className="mt-1 text-[11px] opacity-80">Payment Pending</span>
-                      <span className="mt-1 text-[10px] text-amber-400 font-medium">Shifts to Pending Payment</span>
-                    </button>
-                  </div>
-                </div>
 
-                <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
-                  <button
-                    type="button"
-                    onClick={closeDialog}
-                    className="rounded-lg border border-white/10 px-4 py-2 text-xs text-slate-300 hover:bg-white/5 cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    disabled={saving}
-                    onClick={() => {
-                      const isYes = completePaymentStatus === "YES";
-                      const examDateStr = selectedExam?.examDate ? getIsoDate(selectedExam.examDate) : "";
-                      const isFuture = examDateStr && examDateStr > todayIso();
-                      const targetTab = isYes
-                        ? (isFuture ? "Upcoming" : "Past")
-                        : "Pending Payment";
-                      runAction(async () => {
-                        await apiCompleteExam(selectedExam.id, isYes ? "COMPLETED" : "PENDING");
-                        if (onShiftSection) {
-                          onShiftSection(targetTab);
-                        }
-                      });
-                    }}
-                    className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold text-white transition disabled:opacity-50 cursor-pointer ${completePaymentStatus === "YES" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-amber-600 hover:bg-amber-500"
-                      }`}
-                  >
-                    {saving ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
-                    {saving ? "Processing..." : completePaymentStatus === "YES" ? "Complete & Mark Paid" : "Complete (Pending Payment)"}
-                  </button>
-                </div>
+                      {/* Amount Field */}
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-semibold text-slate-300">
+                          Amount (₹)
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-semibold text-xs">
+                            ₹
+                          </span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="any"
+                            placeholder="Enter amount (e.g. 5000)"
+                            value={completeAmount}
+                            onChange={(e) => setCompleteAmount(e.target.value)}
+                            className="w-full rounded-xl border border-white/10 bg-slate-900/90 pl-7 pr-3 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30"
+                          />
+                        </div>
+                        <p className="text-[10px] text-slate-500">
+                          {completePaymentStatus === "YES" ? "Paid amount for this examination." : "Pending amount due for this examination."}
+                        </p>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2 border-t border-white/10">
+                        <button
+                          type="button"
+                          onClick={closeDialog}
+                          className="rounded-lg border border-white/10 px-4 py-2 text-xs text-slate-300 hover:bg-white/5 cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          disabled={saving}
+                          onClick={() => {
+                            const isYes = completePaymentStatus === "YES";
+                            const targetTab = isFuture
+                              ? "Upcoming"
+                              : (isYes ? "Past" : "Payment Status");
+                            runAction(async () => {
+                              await apiCompleteExam(selectedExam.id, {
+                                paymentStatus: isYes ? "COMPLETED" : "PENDING",
+                                amount: completeAmount !== "" ? Number(completeAmount) : null,
+                              });
+                              if (onShiftSection && !isFuture && !isStatusTab) {
+                                onShiftSection(targetTab);
+                              }
+                            });
+                          }}
+                          className={`inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-semibold text-white transition disabled:opacity-50 cursor-pointer ${completePaymentStatus === "YES" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-amber-600 hover:bg-amber-500"
+                            }`}
+                        >
+                          {saving ? <Loader2 size={13} className="animate-spin" /> : <CheckCircle2 size={13} />}
+                          {saving
+                            ? "Processing..."
+                            : isFuture
+                              ? (completePaymentStatus === "YES" ? "Save as Completed" : "Save as Pending")
+                              : completePaymentStatus === "YES"
+                                ? "Complete & Mark Paid"
+                                : isStatusTab
+                                  ? "Keep Payment Pending"
+                                  : "Complete (Pending Payment)"}
+                        </button>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             ) : null}
 

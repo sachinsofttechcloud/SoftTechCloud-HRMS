@@ -95,7 +95,7 @@ export default function BulkImportModal({ onClose, onImported }) {
   };
 
   const handleConfirm = async () => {
-    if (!review.ready.length || review.duplicates.length > 0) return;
+    if (issueRows.length > 0 || !review.ready.length) return;
 
     setLoading(true);
     setError("");
@@ -342,14 +342,23 @@ export default function BulkImportModal({ onClose, onImported }) {
               <p className="text-xs text-slate-300 leading-relaxed">
                 {review.total} row(s) found in{" "}
                 <span className="font-semibold text-white">{review.fileName}</span>.{" "}
-                {review.duplicates.length > 0 || review.invalid.length > 0
-                  ? "Fix duplicate or invalid rows below and re-upload."
-                  : "All rows are ready to import."}
+                {issueRows.length > 0
+                  ? `Found ${issueRows.length} issue(s) (see below). All errors, past dates, and duplicate entries must be resolved to proceed with import.`
+                  : "All rows are valid and ready to import."}
               </p>
 
-              {/* Issues Table (Duplicates / Invalid rows) */}
+              {/* Issues Table (Duplicates / Invalid rows / Past Dates) */}
               {issueRows.length > 0 ? (
-                <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0f172a]">
+                <div className="overflow-hidden rounded-xl border border-rose-500/30 bg-rose-950/20">
+                  <div className="flex items-center justify-between border-b border-rose-500/20 bg-rose-900/30 px-3.5 py-2 text-xs font-semibold text-rose-300">
+                    <div className="flex items-center gap-1.5">
+                      <AlertTriangle size={15} className="text-rose-400 shrink-0" />
+                      <span>Issues Found ({issueRows.length})</span>
+                    </div>
+                    <span className="text-[11px] text-rose-300/80 font-normal">
+                      Resolve these entries in your CSV/Excel file to enable Proceed
+                    </span>
+                  </div>
                   <div className="max-h-56 overflow-y-auto">
                     <table className="w-full text-left text-xs">
                       <thead className="sticky top-0 border-b border-white/10 bg-slate-900 text-[10px] font-bold uppercase tracking-wider text-slate-400">
@@ -362,7 +371,7 @@ export default function BulkImportModal({ onClose, onImported }) {
                       <tbody className="divide-y divide-white/5">
                         {issueRows.map((row, idx) => (
                           <tr key={`${row.row}-${row.issue}-${idx}`} className="hover:bg-white/5">
-                            <td className="px-3.5 py-2 text-slate-400 font-mono">
+                            <td className="px-3.5 py-2 text-rose-300 font-mono font-bold">
                               {row.row}
                             </td>
                             <td className="px-3.5 py-2 font-medium text-white">
@@ -379,8 +388,8 @@ export default function BulkImportModal({ onClose, onImported }) {
                 </div>
               ) : null}
 
-              {/* Ready Rows Preview Table (if no issues or ready rows) */}
-              {review.ready.length > 0 && review.duplicates.length === 0 ? (
+              {/* Ready Rows Preview Table */}
+              {review.ready.length > 0 ? (
                 <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0f172a]">
                   <div className="max-h-56 overflow-y-auto">
                     <table className="w-full min-w-[580px] text-left text-xs">
@@ -448,7 +457,7 @@ export default function BulkImportModal({ onClose, onImported }) {
           )}
 
           {step === 1 ? (
-            /* Proceed button: VISIBLE ONLY WHEN FILE IS SELECTED */
+            /* Proceed button in Step 1: VISIBLE ONLY WHEN FILE IS SELECTED */
             file ? (
               <button
                 type="button"
@@ -461,18 +470,46 @@ export default function BulkImportModal({ onClose, onImported }) {
               </button>
             ) : null
           ) : (
-            /* Confirm Import button: HIDDEN IF DUPLICATES EXIST */
-            review.duplicates.length === 0 && review.ready.length > 0 ? (
+            /* STEP 2 PROCEED BUTTON:
+               - ALWAYS SHOWN / VISIBLE
+               - IF ANY ISSUE EXISTS (duplicates or invalid rows): NOT CLICKABLE (disabled)
+               - IF ZERO ISSUES EXIST: CLICKABLE!
+            */
+            <div className="flex items-center gap-3">
+              {issueRows.length > 0 && (
+                <div className="flex items-center gap-1.5 text-xs font-medium text-rose-400">
+                  <AlertTriangle size={14} className="shrink-0" />
+                  <span>Fix {issueRows.length} issue{issueRows.length > 1 ? "s" : ""} to proceed</span>
+                </div>
+              )}
+              {issueRows.length === 0 && review.ready.length > 0 && (
+                <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-400">
+                  <Check size={14} className="shrink-0" />
+                  <span>All rows are valid</span>
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={handleConfirm}
-                disabled={loading}
-                className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-amber-400 px-5 py-2 text-xs font-bold text-slate-950 shadow-lg shadow-amber-500/20 transition hover:bg-amber-300 disabled:opacity-50"
+                disabled={loading || issueRows.length > 0 || review.ready.length === 0}
+                title={
+                  issueRows.length > 0
+                    ? `Cannot proceed: ${issueRows.length} issue(s) found in the file`
+                    : review.ready.length === 0
+                    ? "No candidates found to import"
+                    : "Proceed and import candidates"
+                }
+                className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold shadow-lg transition ${
+                  issueRows.length > 0 || review.ready.length === 0
+                    ? "bg-amber-400/20 text-amber-200/40 border border-amber-400/20 cursor-not-allowed opacity-60"
+                    : "bg-amber-400 text-slate-950 shadow-amber-500/20 hover:bg-amber-300 cursor-pointer active:scale-[0.98]"
+                }`}
               >
                 {loading ? <Loader2 size={14} className="animate-spin" /> : null}
-                Confirm Import
+                Proceed to Import
               </button>
-            ) : null
+            </div>
           )}
         </div>
       </div>

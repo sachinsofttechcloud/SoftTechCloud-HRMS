@@ -110,9 +110,47 @@ app.listen(PORT, () => {
   prisma.$executeRawUnsafe(`
     ALTER TABLE "exams" DROP CONSTRAINT IF EXISTS "exams_voucher_assist_support_check";
     ALTER TABLE "exams" DROP CONSTRAINT IF EXISTS "exams_voucher_cost_check";
+    ALTER TABLE "exams" DROP CONSTRAINT IF EXISTS "exams_lifecycle_status_check";
+    ALTER TABLE "exams" ADD CONSTRAINT "exams_lifecycle_status_check" CHECK (lifecycle_status = ANY (ARRAY['SCHEDULED'::text, 'CANCELLED'::text, 'COMPLETED'::text]));
+    ALTER TABLE "exams" ADD COLUMN IF NOT EXISTS "amount" NUMERIC(10, 2) DEFAULT 0;
+
+    CREATE TABLE IF NOT EXISTS "exam_catalog" (
+      "id" SERIAL PRIMARY KEY,
+      "exam_code" VARCHAR(255) UNIQUE,
+      "exam_name" VARCHAR(255) NOT NULL,
+      "technology" VARCHAR(255) NOT NULL,
+      "level_tier" VARCHAR(255) DEFAULT 'Associate',
+      "actual_cost" NUMERIC(10, 2) DEFAULT 0,
+      "voucher_status" VARCHAR(255) DEFAULT 'Available',
+      "provider" VARCHAR(255),
+      "duration" VARCHAR(255),
+      "exam_fee" NUMERIC(10, 2) DEFAULT 0,
+      "description" TEXT,
+      "status" VARCHAR(255) DEFAULT 'ACTIVE',
+      "created_at" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP
+    );
+    ALTER TABLE "exam_catalog" ADD COLUMN IF NOT EXISTS "level_tier" VARCHAR(255) DEFAULT 'Associate';
+    ALTER TABLE "exam_catalog" ADD COLUMN IF NOT EXISTS "actual_cost" NUMERIC(10, 2) DEFAULT 0;
+    ALTER TABLE "exam_catalog" ADD COLUMN IF NOT EXISTS "voucher_status" VARCHAR(255) DEFAULT 'Available';
+
+    INSERT INTO "exam_catalog" ("exam_code", "exam_name", "technology", "level_tier", "actual_cost", "voucher_status", "provider", "duration", "exam_fee", "description")
+    SELECT * FROM (VALUES
+      ('AWS-SAA-C03', 'AWS Certified Solutions Architect - Associate', 'AWS Cloud', 'Associate', 12500.00, 'Available', 'Amazon Web Services', '130 mins', 12500.00, 'Validates knowledge of designing distributed architectures on AWS.'),
+      ('AWS-DVA-C02', 'AWS Certified Developer - Associate', 'AWS Cloud', 'Associate', 12500.00, 'Available', 'Amazon Web Services', '130 mins', 12500.00, 'Demonstrates proficiency in developing and deploying cloud-based applications using AWS.'),
+      ('AWS-SAP-C02', 'AWS Certified Solutions Architect - Professional', 'AWS Cloud', 'Professional', 25000.00, 'Included', 'Amazon Web Services', '180 mins', 25000.00, 'Validates advanced technical skills in designing complex AWS solutions.'),
+      ('AZ-900', 'Microsoft Azure Fundamentals', 'Microsoft Azure', 'Fundamental', 8000.00, 'Available', 'Microsoft', '60 mins', 8000.00, 'Foundational level knowledge of cloud services and Microsoft Azure.'),
+      ('AZ-104', 'Microsoft Azure Administrator', 'Microsoft Azure', 'Associate', 14000.00, 'Available', 'Microsoft', '120 mins', 14000.00, 'Managing Azure identities, governance, storage, compute, and virtual networks.'),
+      ('AZ-305', 'Designing Microsoft Azure Infrastructure Solutions', 'Microsoft Azure', 'Expert', 14000.00, 'Not Available', 'Microsoft', '120 mins', 14000.00, 'Expert-level certification for Azure solutions architecture.'),
+      ('GCP-ACE', 'Google Associate Cloud Engineer', 'Google Cloud (GCP)', 'Associate', 10500.00, 'Available', 'Google Cloud', '120 mins', 10500.00, 'Deploys applications, monitors operations, and manages enterprise solutions.'),
+      ('GCP-PCA', 'Google Professional Cloud Architect', 'Google Cloud (GCP)', 'Professional', 16500.00, 'Included', 'Google Cloud', '120 mins', 16500.00, 'Assesses organizations to leverage Google Cloud technologies.'),
+      ('CCNA-200-301', 'Cisco Certified Network Associate (CCNA)', 'Cisco Networking', 'Associate', 24000.00, 'Available', 'Cisco Systems', '120 mins', 24000.00, 'Covers networking fundamentals, IP services, security fundamentals, and automation.'),
+      ('CKA', 'Certified Kubernetes Administrator', 'DevOps & Containers', 'Professional', 32000.00, 'Not Available', 'Linux Foundation', '120 mins', 32000.00, 'Demonstrates competency in Kubernetes administration, configuration, and troubleshooting.')
+    ) AS v("exam_code", "exam_name", "technology", "level_tier", "actual_cost", "voucher_status", "provider", "duration", "exam_fee", "description")
+    WHERE NOT EXISTS (SELECT 1 FROM "exam_catalog" LIMIT 1);
   `).then(() => {
-    console.log("✅ Verified exams table constraints allow both voucher and assist support.");
-  }).catch((err) => console.warn("Drop constraint error:", err.message));
+    console.log("✅ Verified exams and exam_catalog table constraints and columns.");
+  }).catch((err) => console.warn("Drop/update constraint error:", err.message));
   notifyEmployeeMilestones().catch((err) => console.warn("Milestone notify:", err.message));
   sendDueExamReminders().catch((err) => console.warn("Exam SMS reminder:", err.message));
   runLeadAutomation().catch((err) => console.warn("Lead automation:", err.message));

@@ -17,7 +17,14 @@ function toDateKey(value) {
     return value.toISOString().slice(0, 10);
   }
   const text = String(value).trim();
-  if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+  if (/^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}/.test(text)) {
+    const parts = text.split(/[\/\-]/);
+    return `${parts[0]}-${parts[1].padStart(2, "0")}-${parts[2].slice(0, 2).padStart(2, "0")}`;
+  }
+  const dmy = text.match(/^(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})$/);
+  if (dmy) {
+    return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
+  }
   const parsed = new Date(text);
   return Number.isNaN(parsed.getTime()) ? "" : parsed.toISOString().slice(0, 10);
 }
@@ -33,24 +40,41 @@ function duplicateKey(candidateName, mobileNo, examName, examDate) {
     .join("|");
 }
 
+function getTodayYmd() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function validateCandidate(input = {}) {
   const errors = {};
-  const candidateName = String(input.candidateName || input.fullName || "").trim();
-  const technology = String(input.technology || "").trim();
-  const examName = String(input.examName || "").trim();
-  const mobileNo = String(input.mobileNo || "").trim();
-  const examDate = toDateKey(input.examDate);
-  const examTime = String(input.examTime || "").trim();
+  const candidateName = String(input.candidateName || input.fullName || input.name || "").trim();
+  const technology = String(input.technology || input.tech || "").trim();
+  const examName = String(input.examName || input.certification || "").trim();
+  let mobileNo = String(input.mobileNo || input.phone || "").trim();
+  if (/^\d+\.0+$/.test(mobileNo)) mobileNo = mobileNo.split(".")[0];
+  const examDate = toDateKey(input.examDate || input.date);
+  const examTime = String(input.examTime || input.time || "").trim();
   const voucher = toBoolean(input.voucher);
   const assistSupport = toBoolean(input.assistSupport);
   const aadharCard = input.aadharCard || input.identityDocument || null;
+
+  const todayYmd = getTodayYmd();
 
   if (!candidateName) errors.candidateName = "Please enter full name";
   if (!technology) errors.technology = "Please enter technology";
   if (!examName) errors.examName = "Please enter exam name";
   if (!mobileNo) errors.mobileNo = "Please enter mobile number";
   else if (!/^\+?[\d\s()-]{7,20}$/.test(mobileNo)) errors.mobileNo = "Please enter a valid mobile number";
-  if (!examDate) errors.examDate = "Please enter exam date";
+
+  if (!examDate) {
+    errors.examDate = "Please enter exam date";
+  } else if (examDate < todayYmd) {
+    errors.examDate = `Exam date (${examDate}) cannot be in the past. Please enter a valid date (today or upcoming).`;
+  }
+
   if (!examTime) errors.examTime = "Please enter exam time";
 
   return {
@@ -84,7 +108,8 @@ async function ensureVoucherSupportConstraintDropped() {
 
 async function insertExam(data) {
   await ensureVoucherSupportConstraintDropped();
-  const parsedExamDate = new Date(`${data.examDate}T00:00:00.000Z`);
+  const ymd = toDateKey(data.examDate) || new Date().toISOString().slice(0, 10);
+  const parsedExamDate = new Date(`${ymd}T00:00:00.000Z`);
   const savedAadharCard = data.aadharCard ? saveBase64Media(data.aadharCard, "aadhar", "aadhar") : null;
   const exams = await prisma.$queryRaw`
     INSERT INTO exams (
@@ -101,6 +126,7 @@ async function insertExam(data) {
       id, candidate_name AS "candidateName", technology, exam_name AS "examName",
       mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
       voucher, assist_support AS "assistSupport", aadhar_card AS "aadharCard", payment_status AS "paymentStatus",
+      amount,
       lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
       attended, reminder_sent_at AS "reminderSentAt",
       one_hour_reminder_sent_at AS "oneHourReminderSentAt",
@@ -153,8 +179,8 @@ function classifyBulkRows(rows, existingKeys) {
 
 function statusForPast(exam) {
   if (exam.lifecycleStatus === "CANCELLED") return "CANCELLED";
-  if (exam.paymentStatus === "COMPLETED" || exam.lifecycleStatus === "COMPLETED") return "COMPLETED";
-  return exam.attended === true ? "COMPLETED" : "MISSED";
+  if (exam.paymentStatus === "COMPLETED") return "COMPLETED";
+  return exam.paymentStatus === "PENDING" ? "PENDING_PAYMENT" : (exam.attended === true ? "COMPLETED" : "MISSED");
 }
 
 export async function getUpcomingExams(req, res) {
@@ -163,6 +189,7 @@ export async function getUpcomingExams(req, res) {
       SELECT id, candidate_name AS "candidateName", technology, exam_name AS "examName",
         mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
         voucher, assist_support AS "assistSupport", aadhar_card AS "aadharCard", payment_status AS "paymentStatus",
+        amount,
         lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
         case_raised_at AS "caseRaiseDate", case_raised_at AS "caseRaisedAt",
         case_reason AS "caseReason",
@@ -188,6 +215,7 @@ export async function getActiveExams(req, res) {
       SELECT id, candidate_name AS "candidateName", technology, exam_name AS "examName",
         mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
         voucher, assist_support AS "assistSupport", aadhar_card AS "aadharCard", payment_status AS "paymentStatus",
+        amount,
         lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
         case_raised_at AS "caseRaiseDate", case_raised_at AS "caseRaisedAt",
         case_reason AS "caseReason",
@@ -215,6 +243,7 @@ export async function getCaseRaiseExams(req, res) {
       SELECT id, candidate_name AS "candidateName", technology, exam_name AS "examName",
         mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
         voucher, assist_support AS "assistSupport", aadhar_card AS "aadharCard", payment_status AS "paymentStatus",
+        amount,
         lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
         case_raised_at AS "caseRaiseDate", case_raised_at AS "caseRaisedAt",
         case_reason AS "caseReason",
@@ -233,12 +262,13 @@ export async function getCaseRaiseExams(req, res) {
   }
 }
 
-export async function getPendingPaymentExams(req, res) {
+export async function getPaymentStatusExams(req, res) {
   try {
     const exams = await prisma.$queryRaw`
       SELECT id, candidate_name AS "candidateName", technology, exam_name AS "examName",
         mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
         voucher, assist_support AS "assistSupport", aadhar_card AS "aadharCard", payment_status AS "paymentStatus",
+        amount,
         lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
         case_raised_at AS "caseRaiseDate", case_raised_at AS "caseRaisedAt",
         case_reason AS "caseReason",
@@ -246,16 +276,28 @@ export async function getPendingPaymentExams(req, res) {
         one_hour_reminder_sent_at AS "oneHourReminderSentAt",
         created_at AS "createdAt", updated_at AS "updatedAt"
       FROM exams
-      WHERE payment_status = 'PENDING'
-        AND lifecycle_status = 'COMPLETED'
+      WHERE (
+        -- Completed payments (including completed from Today Exam and past)
+        (payment_status = 'COMPLETED' AND (lifecycle_status = 'COMPLETED' OR exam_date <= CURRENT_DATE))
+        OR
+        -- Pending payments within 4 days (after 4 days, they move to Past Exam section)
+        (payment_status = 'PENDING' AND (lifecycle_status = 'COMPLETED' OR exam_date <= CURRENT_DATE) AND exam_date >= CURRENT_DATE - INTERVAL '4 days')
+      )
+      AND lifecycle_status != 'CANCELLED'
+      AND case_raised_at IS NULL
       ORDER BY updated_at DESC, exam_date DESC
     `;
-    res.json(exams.map((exam) => ({ ...exam, status: "PENDING_PAYMENT" })));
+    res.json(exams.map((exam) => ({
+      ...exam,
+      status: exam.paymentStatus === "COMPLETED" ? "COMPLETED" : "PENDING_PAYMENT",
+    })));
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to fetch pending payment exams" });
+    res.status(500).json({ error: "Failed to fetch payment status exams" });
   }
 }
+
+export const getPendingPaymentExams = getPaymentStatusExams;
 
 export async function getPastExams(req, res) {
   try {
@@ -263,6 +305,7 @@ export async function getPastExams(req, res) {
       SELECT id, candidate_name AS "candidateName", technology, exam_name AS "examName",
         mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
         voucher, assist_support AS "assistSupport", aadhar_card AS "aadharCard", payment_status AS "paymentStatus",
+        amount,
         lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
         case_raised_at AS "caseRaiseDate", case_raised_at AS "caseRaisedAt",
         case_reason AS "caseReason",
@@ -270,10 +313,16 @@ export async function getPastExams(req, res) {
         one_hour_reminder_sent_at AS "oneHourReminderSentAt",
         created_at AS "createdAt", updated_at AS "updatedAt"
       FROM exams
-      WHERE (((lifecycle_status = 'COMPLETED' AND payment_status = 'COMPLETED')
-              OR (exam_date < CURRENT_DATE AND case_raised_at IS NULL AND lifecycle_status = 'SCHEDULED'))
-             AND exam_date <= CURRENT_DATE)
-        OR lifecycle_status = 'CANCELLED'
+      WHERE (
+        -- Completed payment exams
+        (((lifecycle_status = 'COMPLETED' OR exam_date < CURRENT_DATE) AND payment_status = 'COMPLETED') AND case_raised_at IS NULL)
+        OR
+        -- Pending payment exams where 4 days have passed since exam date (moved to past section)
+        (payment_status = 'PENDING' AND (lifecycle_status = 'COMPLETED' OR exam_date < CURRENT_DATE) AND exam_date < CURRENT_DATE - INTERVAL '4 days' AND case_raised_at IS NULL)
+        OR
+        -- Cancelled exams
+        lifecycle_status = 'CANCELLED'
+      )
       ORDER BY updated_at DESC, exam_date DESC
     `;
     res.json(exams.map((exam) => ({ ...exam, status: statusForPast(exam) })));
@@ -289,6 +338,7 @@ export async function getCompletedExams(req, res) {
       SELECT id, candidate_name AS "candidateName", technology, exam_name AS "examName",
         mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
         voucher, assist_support AS "assistSupport", aadhar_card AS "aadharCard", payment_status AS "paymentStatus",
+        amount,
         lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
         attended, reminder_sent_at AS "reminderSentAt",
         one_hour_reminder_sent_at AS "oneHourReminderSentAt",
@@ -313,6 +363,7 @@ export async function getExamById(req, res) {
       SELECT id, candidate_name AS "candidateName", technology, exam_name AS "examName",
         mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
         voucher, assist_support AS "assistSupport", aadhar_card AS "aadharCard", payment_status AS "paymentStatus",
+        amount,
         lifecycle_status AS "lifecycleStatus", cancelled_at AS "cancelledAt",
         attended, reminder_sent_at AS "reminderSentAt",
         one_hour_reminder_sent_at AS "oneHourReminderSentAt",
@@ -371,21 +422,35 @@ export async function previewBulkExams(req, res) {
 export async function createBulkExams(req, res) {
   try {
     const rows = Array.isArray(req.body?.rows) ? req.body.rows : [];
-    if (!rows.length) return res.status(400).json({ error: "No rows are ready to import." });
+    if (!rows.length) return res.status(400).json({ error: "No candidate rows provided for import." });
     if (rows.length > MAX_BULK_ROWS) {
       return res.status(400).json({ error: `Import at most ${MAX_BULK_ROWS.toLocaleString()} rows at a time.` });
     }
     const { ready, duplicates, invalid } = classifyBulkRows(rows, await loadExistingExamKeys());
     if (!ready.length) {
-      return res.status(400).json({ error: "No rows are ready to import.", duplicates, invalid });
+      return res.status(400).json({
+        error: duplicates.length
+          ? "All candidate(s) in this file already exist in the schedule."
+          : "No valid candidate rows found to import.",
+        duplicates,
+        invalid,
+      });
     }
     const created = [];
-    for (const row of ready) created.push(await insertExam(row));
+    for (const row of ready) {
+      try {
+        const exam = await insertExam(row);
+        created.push(exam);
+        syncExamCandidateToLead(exam).catch(() => {});
+      } catch (insertErr) {
+        console.error("Failed to insert bulk row:", row, insertErr);
+      }
+    }
     sendDueExamReminders().catch((err) =>
       console.warn("[EXAM SMS] Bulk reminder:", err.message)
     );
     res.status(201).json({
-      message: "Candidate details submitted successfully",
+      message: `Successfully imported ${created.length} candidate(s)`,
       created: created.length,
       exams: created,
       duplicates,
@@ -393,7 +458,7 @@ export async function createBulkExams(req, res) {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to import candidates" });
+    res.status(500).json({ error: err.message || "Failed to import candidates" });
   }
 }
 
@@ -549,17 +614,24 @@ export async function updateExamPayment(req, res) {
   try {
     const examId = parseExamId(req.params.id);
     const paymentStatus = String(req.body?.paymentStatus || "").toUpperCase();
+    const amountVal = req.body?.amount !== undefined && req.body?.amount !== "" && req.body?.amount !== null
+      ? Number(req.body.amount)
+      : null;
     if (!examId) return res.status(400).json({ error: "Invalid exam ID" });
     if (!PAYMENT_STATUSES.has(paymentStatus)) {
       return res.status(400).json({ error: "Payment status must be PENDING or COMPLETED" });
     }
     const exams = await prisma.$queryRaw`
-      UPDATE exams SET payment_status = ${paymentStatus}, updated_at = CURRENT_TIMESTAMP
+      UPDATE exams
+      SET payment_status = ${paymentStatus},
+          amount = CASE WHEN ${amountVal}::numeric IS NOT NULL THEN ${amountVal}::numeric ELSE amount END,
+          attended = CASE WHEN ${paymentStatus} = 'COMPLETED' THEN true ELSE attended END,
+          updated_at = CURRENT_TIMESTAMP
       WHERE id = ${examId}
       RETURNING id, candidate_name AS "candidateName", exam_name AS "examName",
         technology, mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
         voucher, assist_support AS "assistSupport", payment_status AS "paymentStatus",
-        lifecycle_status AS "lifecycleStatus"
+        amount, lifecycle_status AS "lifecycleStatus"
     `;
     if (!exams.length) return res.status(404).json({ error: "Exam record not found" });
 
@@ -583,12 +655,16 @@ export async function completeExam(req, res) {
     const rawPayment = String(req.body?.paymentStatus || req.body?.payment || "").trim().toUpperCase();
     const isCompleted = rawPayment === "YES" || rawPayment === "COMPLETED";
     const paymentStatus = isCompleted ? "COMPLETED" : "PENDING";
+    const amountVal = req.body?.amount !== undefined && req.body?.amount !== "" && req.body?.amount !== null
+      ? Number(req.body.amount)
+      : null;
 
     // Determine current exam date to handle future rescheduled dates
     const existing = await prisma.$queryRaw`
       SELECT id, candidate_name AS "candidateName", technology, exam_name AS "examName",
              mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
-             voucher, assist_support AS "assistSupport"
+             voucher, assist_support AS "assistSupport", lifecycle_status AS "lifecycleStatus",
+             attended, amount
       FROM exams
       WHERE id = ${examId}
     `;
@@ -601,16 +677,30 @@ export async function completeExam(req, res) {
     const examDateStr = toDateKey(curExam.examDate);
     const todayStr = new Date().toISOString().slice(0, 10);
     const isFuture = examDateStr > todayStr;
+    const isAlreadyCompletedLifecycle = curExam.lifecycleStatus === "COMPLETED";
 
-    // If payment completed and date is future, exam stays SCHEDULED for that future date (in Upcoming)
-    // Otherwise lifecycle_status is COMPLETED
-    const newLifecycle = (isCompleted && isFuture) ? "SCHEDULED" : "COMPLETED";
-    const attended = !isFuture;
+    // Requirements:
+    // 1) Upcoming Schedule exam (isFuture):
+    //    Selecting either "Payment Completed" or "Payment Pending" only updates the payment status & amount.
+    //    It MUST remain in Upcoming Schedule (lifecycle_status = 'SCHEDULED'), NOT move to Pending Payment or Past Exam.
+    //    When today's date reaches that exam date, it will naturally appear in Today Exam.
+    // 2) Today Exam or Already Completed:
+    //    - If Payment Completed: lifecycle_status = 'COMPLETED', payment_status = 'COMPLETED' -> shifts to Past Exam.
+    //    - If Payment Pending: lifecycle_status = 'COMPLETED', payment_status = 'PENDING' -> shifts to Pending Payment only.
+    //    - Both cases remove it from Today Exam.
+    // 3) Pending Payment section:
+    //    - Once Payment Completed: lifecycle_status = 'COMPLETED', payment_status = 'COMPLETED' -> shifts to Past Exam only.
+    const newLifecycle = (isFuture && !isAlreadyCompletedLifecycle) ? "SCHEDULED" : "COMPLETED";
+    const attended = isFuture ? Boolean(curExam.attended) : true;
+    const finalAmount = amountVal !== null && !Number.isNaN(amountVal)
+      ? amountVal
+      : (curExam.amount !== null ? Number(curExam.amount) : 0);
 
     const exams = await prisma.$queryRaw`
       UPDATE exams
       SET lifecycle_status = ${newLifecycle},
           payment_status = ${paymentStatus},
+          amount = ${finalAmount},
           attended = ${attended},
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ${examId}
@@ -618,7 +708,7 @@ export async function completeExam(req, res) {
       RETURNING id, candidate_name AS "candidateName", technology, exam_name AS "examName",
         mobile_no AS "mobileNo", mode, exam_date AS "examDate", exam_time AS "examTime",
         voucher, assist_support AS "assistSupport", payment_status AS "paymentStatus",
-        lifecycle_status AS "lifecycleStatus"
+        amount, lifecycle_status AS "lifecycleStatus"
     `;
 
     if (!exams.length) {
@@ -631,8 +721,9 @@ export async function completeExam(req, res) {
     await syncExamCandidateToLead(exam, req.user?.id);
 
     res.json({
-      message: `Exam marked as completed successfully (Payment: ${paymentStatus})`,
+      message: `Exam updated successfully (Payment: ${paymentStatus})`,
       paymentStatus,
+      amount: finalAmount,
       exam,
     });
   } catch (err) {
@@ -903,21 +994,62 @@ export async function getExamCatalog(req, res) {
   try {
     const search = String(req.query?.search || "").trim();
     const technology = String(req.query?.technology || "").trim();
+    const examName = String(req.query?.examName || "").trim();
+    const voucherStatus = String(req.query?.voucherStatus || "").trim();
+    const levelTier = String(req.query?.levelTier || "").trim();
+    const minCost = req.query?.minCost !== undefined && req.query?.minCost !== "" ? Number(req.query.minCost) : null;
+    const maxCost = req.query?.maxCost !== undefined && req.query?.maxCost !== "" ? Number(req.query.maxCost) : null;
 
-    let query = `SELECT id, exam_code AS "examCode", exam_name AS "examName",
-      technology, provider, duration, exam_fee AS "examFee",
-      description, status, created_at AS "createdAt", updated_at AS "updatedAt"
+    let query = `SELECT id,
+      exam_code AS "examCode",
+      exam_name AS "examName",
+      technology,
+      level_tier AS "levelTier",
+      actual_cost AS "actualCost",
+      voucher_status AS "voucherStatus",
+      provider,
+      duration,
+      exam_fee AS "examFee",
+      description,
+      status,
+      created_at AS "createdAt",
+      updated_at AS "updatedAt"
       FROM exam_catalog WHERE 1=1`;
     const params = [];
 
     if (search) {
       params.push(`%${search}%`);
-      query += ` AND (exam_name ILIKE $${params.length} OR exam_code ILIKE $${params.length} OR technology ILIKE $${params.length})`;
+      query += ` AND (exam_name ILIKE $${params.length} OR exam_code ILIKE $${params.length} OR technology ILIKE $${params.length} OR provider ILIKE $${params.length} OR level_tier ILIKE $${params.length})`;
     }
 
     if (technology && technology !== "all") {
       params.push(`%${technology}%`);
       query += ` AND technology ILIKE $${params.length}`;
+    }
+
+    if (examName && examName !== "all") {
+      params.push(`%${examName}%`);
+      query += ` AND exam_name ILIKE $${params.length}`;
+    }
+
+    if (voucherStatus && voucherStatus !== "all") {
+      params.push(`%${voucherStatus}%`);
+      query += ` AND voucher_status ILIKE $${params.length}`;
+    }
+
+    if (levelTier && levelTier !== "all") {
+      params.push(`%${levelTier}%`);
+      query += ` AND level_tier ILIKE $${params.length}`;
+    }
+
+    if (minCost !== null && !isNaN(minCost)) {
+      params.push(minCost);
+      query += ` AND (actual_cost >= $${params.length} OR exam_fee >= $${params.length})`;
+    }
+
+    if (maxCost !== null && !isNaN(maxCost)) {
+      params.push(maxCost);
+      query += ` AND (actual_cost <= $${params.length} OR exam_fee <= $${params.length})`;
     }
 
     query += ` ORDER BY exam_name ASC`;
@@ -932,25 +1064,47 @@ export async function getExamCatalog(req, res) {
 
 export async function createExamCatalogItem(req, res) {
   try {
-    const examCode = String(req.body?.examCode || "").trim().toUpperCase();
+    let examCode = String(req.body?.examCode || "").trim().toUpperCase();
     const examName = String(req.body?.examName || "").trim();
     const technology = String(req.body?.technology || "").trim();
+    const levelTier = String(req.body?.levelTier || "Associate").trim();
+    const actualCost = req.body?.actualCost !== undefined && req.body?.actualCost !== ""
+      ? Number(req.body.actualCost)
+      : (req.body?.examFee !== undefined && req.body?.examFee !== "" ? Number(req.body.examFee) : 0);
+    const voucherStatus = String(req.body?.voucherStatus || "Available").trim();
     const provider = String(req.body?.provider || "").trim() || null;
     const duration = String(req.body?.duration || "").trim() || null;
-    const examFee = req.body?.examFee !== undefined && req.body?.examFee !== "" ? Number(req.body.examFee) : null;
+    const examFee = req.body?.examFee !== undefined && req.body?.examFee !== "" ? Number(req.body.examFee) : actualCost;
     const description = String(req.body?.description || "").trim() || null;
 
-    if (!examCode) return res.status(400).json({ error: "Exam code is required" });
     if (!examName) return res.status(400).json({ error: "Exam name is required" });
     if (!technology) return res.status(400).json({ error: "Technology is required" });
 
+    if (!examCode) {
+      examCode = `EX-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 1000)}`;
+    }
+
     const created = await prisma.$queryRawUnsafe(`
-      INSERT INTO exam_catalog (exam_code, exam_name, technology, provider, duration, exam_fee, description)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING id, exam_code AS "examCode", exam_name AS "examName",
-        technology, provider, duration, exam_fee AS "examFee",
-        description, status, created_at AS "createdAt", updated_at AS "updatedAt"
-    `, examCode, examName, technology, provider, duration, examFee, description);
+      INSERT INTO exam_catalog (
+        exam_code, exam_name, technology, level_tier, actual_cost, voucher_status,
+        provider, duration, exam_fee, description
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      RETURNING id,
+        exam_code AS "examCode",
+        exam_name AS "examName",
+        technology,
+        level_tier AS "levelTier",
+        actual_cost AS "actualCost",
+        voucher_status AS "voucherStatus",
+        provider,
+        duration,
+        exam_fee AS "examFee",
+        description,
+        status,
+        created_at AS "createdAt",
+        updated_at AS "updatedAt"
+    `, examCode, examName, technology, levelTier, actualCost, voucherStatus, provider, duration, examFee, description);
 
     res.status(201).json(created[0]);
   } catch (err) {
@@ -967,34 +1121,66 @@ export async function updateExamCatalogItem(req, res) {
     const id = parseExamId(req.params.id);
     if (!id) return res.status(400).json({ error: "Invalid catalog ID" });
 
-    const examCode = String(req.body?.examCode || "").trim().toUpperCase();
+    let examCode = String(req.body?.examCode || "").trim().toUpperCase();
     const examName = String(req.body?.examName || "").trim();
     const technology = String(req.body?.technology || "").trim();
+    const levelTier = String(req.body?.levelTier || "Associate").trim();
+    const actualCost = req.body?.actualCost !== undefined && req.body?.actualCost !== ""
+      ? Number(req.body.actualCost)
+      : (req.body?.examFee !== undefined && req.body?.examFee !== "" ? Number(req.body.examFee) : 0);
+    const voucherStatus = String(req.body?.voucherStatus || "Available").trim();
     const provider = String(req.body?.provider || "").trim() || null;
     const duration = String(req.body?.duration || "").trim() || null;
-    const examFee = req.body?.examFee !== undefined && req.body?.examFee !== "" ? Number(req.body.examFee) : null;
+    const examFee = req.body?.examFee !== undefined && req.body?.examFee !== "" ? Number(req.body.examFee) : actualCost;
     const description = String(req.body?.description || "").trim() || null;
     const status = String(req.body?.status || "ACTIVE").trim().toUpperCase();
 
-    if (!examCode || !examName || !technology) {
-      return res.status(400).json({ error: "Exam code, name and technology are required" });
+    if (!examName || !technology) {
+      return res.status(400).json({ error: "Exam name and technology are required" });
+    }
+
+    if (!examCode) {
+      examCode = `EX-${id}-${Date.now().toString(36).toUpperCase()}`;
     }
 
     const updated = await prisma.$queryRawUnsafe(`
       UPDATE exam_catalog
-      SET exam_code = $1, exam_name = $2, technology = $3, provider = $4,
-          duration = $5, exam_fee = $6, description = $7, status = $8,
+      SET exam_code = $1,
+          exam_name = $2,
+          technology = $3,
+          level_tier = $4,
+          actual_cost = $5,
+          voucher_status = $6,
+          provider = $7,
+          duration = $8,
+          exam_fee = $9,
+          description = $10,
+          status = $11,
           updated_at = CURRENT_TIMESTAMP
-      WHERE id = $9
-      RETURNING id, exam_code AS "examCode", exam_name AS "examName",
-        technology, provider, duration, exam_fee AS "examFee",
-        description, status, created_at AS "createdAt", updated_at AS "updatedAt"
-    `, examCode, examName, technology, provider, duration, examFee, description, status, id);
+      WHERE id = $12
+      RETURNING id,
+        exam_code AS "examCode",
+        exam_name AS "examName",
+        technology,
+        level_tier AS "levelTier",
+        actual_cost AS "actualCost",
+        voucher_status AS "voucherStatus",
+        provider,
+        duration,
+        exam_fee AS "examFee",
+        description,
+        status,
+        created_at AS "createdAt",
+        updated_at AS "updatedAt"
+    `, examCode, examName, technology, levelTier, actualCost, voucherStatus, provider, duration, examFee, description, status, id);
 
     if (!updated.length) return res.status(404).json({ error: "Catalog item not found" });
     res.json(updated[0]);
   } catch (err) {
     console.error(err);
+    if (err.message && err.message.includes("unique")) {
+      return res.status(409).json({ error: "An exam with this exam code already exists." });
+    }
     res.status(500).json({ error: "Failed to update catalog entry" });
   }
 }

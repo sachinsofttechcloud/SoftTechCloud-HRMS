@@ -7,6 +7,7 @@ import {
   getCaseRaiseExams,
   getPastExams,
   getPendingPaymentExams,
+  getPaymentStatusExams,
   getCompletedExams,
   getExamById,
   createExam,
@@ -33,6 +34,7 @@ router.get("/upcoming-exams", authenticateToken, getUpcomingExams);
 router.get("/active-exams", authenticateToken, getActiveExams);
 router.get("/today-exams", authenticateToken, getTodayExams);
 router.get("/case-raise-exams", authenticateToken, getCaseRaiseExams);
+router.get("/payment-status", authenticateToken, getPaymentStatusExams);
 router.get("/pending-payment", authenticateToken, getPendingPaymentExams);
 router.get("/past-exams", authenticateToken, getPastExams);
 router.get("/completed-exams", authenticateToken, getCompletedExams);

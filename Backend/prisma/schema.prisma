@@ -330,6 +330,7 @@ model Exam {
   voucher                Boolean       @default(false)
   assistSupport          Boolean       @default(true) @map("assist_support")
   paymentStatus          String        @default("PENDING") @map("payment_status")
+  amount                 Decimal?      @default(0) @db.Decimal(10, 2)
   lifecycleStatus        String        @default("SCHEDULED") @map("lifecycle_status")
   cancelledAt            DateTime?     @map("cancelled_at")
   caseRaisedAt           DateTime?     @map("case_raised_at")
@@ -356,17 +357,20 @@ model Exam {
 }
 
 model ExamCatalog {
-  id          Int      @id @default(autoincrement())
-  examCode    String   @unique @map("exam_code")
-  examName    String   @map("exam_name")
-  technology  String
-  provider    String?
-  duration    String?
-  examFee     Decimal? @map("exam_fee") @db.Decimal(10, 2)
-  description String?
-  status      String   @default("ACTIVE")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id            Int      @id @default(autoincrement())
+  examCode      String?  @unique @map("exam_code")
+  examName      String   @map("exam_name")
+  technology    String
+  levelTier     String?  @default("Associate") @map("level_tier")
+  actualCost    Decimal? @default(0) @map("actual_cost") @db.Decimal(10, 2)
+  voucherStatus String?  @default("Available") @map("voucher_status")
+  provider      String?
+  duration      String?
+  examFee       Decimal? @map("exam_fee") @db.Decimal(10, 2)
+  description   String?
+  status        String   @default("ACTIVE")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@map("exam_catalog")
 }
